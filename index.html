@@ -3,36 +3,79 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QR BLINK</title>
+    <title>marqr.net</title>
+    <link rel="icon" type="image/png" href="/src/assets/qr.png" />
+    <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app">
       <div class="container">
-        <h1>QR BLINK.NET</h1>
-        <div class="input-section">
-          <input
-            type="text"
-            id="url-input"
-            placeholder="https://qrblink.net"
-            value=""
-          />
-        </div>
-        <div class="preview-section">
-          <canvas id="qr-canvas"></canvas>
-        </div>
-        <div class="button-section">
-          <div class="color-section">
-            <input type="color" id="color-picker" value="#000000" aria-label="QR color" />
+        <div class="content">
+          <div class="preview-section">
+            <div id="qr-target"></div>
           </div>
-          <button id="download-btn" type="button" aria-label="Download PNG">
-            ⬇ PNG
-          </button>
-          <button id="download-svg-btn" type="button" aria-label="Download SVG">
-            ⬇ SVG
-          </button>
+          <div class="input-section">
+            <input
+              type="text"
+              id="url-input"
+              placeholder="https://marqr.net"
+              value=""
+            />
+          </div>
+          <div class="button-section">
+            <div class="style-section">
+              <button id="style-toggle" type="button" aria-expanded="false">
+                <span class="style-swatch style-square"></span>
+                <span id="style-label">Square</span>
+              </button>
+              <div class="style-menu" id="style-menu" hidden>
+                <button type="button" data-style="rounded">
+                  <span class="style-swatch style-rounded"></span>Rounded
+                </button>
+                <button type="button" data-style="dots">
+                  <span class="style-swatch style-dots"></span>Dots
+                </button>
+                <button type="button" data-style="classy">
+                  <span class="style-swatch style-classy"></span>Classy
+                </button>
+                <button type="button" data-style="square">
+                  <span class="style-swatch style-square"></span>Square
+                </button>
+              </div>
+            </div>
+            <div class="color-section">
+              <label class="color-picker">
+                <input type="color" id="color-picker" value="#000000" aria-label="QR color" />
+                <svg
+                  class="palette-icon"
+                  aria-hidden="true"
+                  viewBox="0 0 492.449 492.449"
+                  role="img"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M492.19,255.101c-2.954-65.279-31.045-127.694-79.098-175.748c-25.675-25.675-55.349-45.636-88.195-59.328 C293.024,6.739,259.809,0.003,226.174,0.003c-61.758,0-118.927,23.158-160.978,65.208c-30.067,30.066-50.775,68.312-59.888,110.6 c-8.761,40.661-6.646,84.015,6.12,125.374l42.297,9.543c17.819-19.393,43.128-30.516,69.437-30.516 c51.983,0,94.274,42.292,94.274,94.275c0,25.455-9.997,49.316-28.15,67.186l11.031,41.955c21.707,5.852,43.898,8.816,65.957,8.818 c0.008,0,0.006,0,0.014,0c61.742,0,118.907-23.154,160.948-65.195C472.114,382.37,495.182,321.233,492.19,255.101z M323.777,77.013 c20.856,0,37.765,16.907,37.765,37.764c0,20.857-16.907,37.764-37.765,37.764c-20.856,0-37.764-16.907-37.764-37.764 C286.013,93.92,302.921,77.013,323.777,77.013z M101.7,203.304c-20.856,0-37.764-16.907-37.764-37.764s16.907-37.764,37.764-37.764 s37.764,16.907,37.764,37.764S122.556,203.304,101.7,203.304z M201.028,127.777c-20.856,0-37.764-16.907-37.764-37.764 s16.907-37.764,37.764-37.764c20.857,0,37.764,16.907,37.764,37.764S221.884,127.777,201.028,127.777z M326.112,409.29 c-29.821,0-53.996-24.175-53.996-53.997c0-29.821,24.175-53.997,53.996-53.997c29.822,0,53.997,24.176,53.997,53.997 C380.109,385.115,355.933,409.29,326.112,409.29z M396.607,266.935c-20.855,0-37.764-16.906-37.764-37.763 c0-20.857,16.907-37.764,37.764-37.764c20.857,0,37.765,16.907,37.765,37.764C434.372,250.028,417.464,266.935,396.607,266.935z"
+                  />
+                </svg>
+              </label>
+            </div>
+            <button id="download-btn" type="button" aria-label="Download PNG" class="download-btn">
+              <span class="download-arrow">⬇</span><span class="download-label">PNG</span>
+            </button>
+            <button id="download-svg-btn" type="button" aria-label="Download SVG" class="download-btn">
+              <span class="download-arrow">⬇</span><span class="download-label">SVG</span>
+            </button>
+          </div>
         </div>
         <div class="footer">
           <p>💫 Free QR code generator without the BS</p>
+
+          <a href="https://github.com/marns/marqr" class="github-link" target="_blank">
+            <svg width="24" height="24" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/>
+            </svg>
+        </a>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

@@ -1,141 +1,183 @@
 import './style.css'
-import QRCode from 'qrcode'
+import QRCodeStyling, {
+  type CornerDotType,
+  type CornerSquareType,
+  type DotType
+} from 'qr-code-styling'
 
 const urlInput = document.querySelector<HTMLInputElement>('#url-input')!
-const qrCanvas = document.querySelector<HTMLCanvasElement>('#qr-canvas')!
+const qrTarget = document.querySelector<HTMLDivElement>('#qr-target')!
 const downloadPngBtn =
   document.querySelector<HTMLButtonElement>('#download-btn')!
 const downloadSvgBtn =
   document.querySelector<HTMLButtonElement>('#download-svg-btn')!
-const previewSection = document.querySelector<HTMLDivElement>('.preview-section')!
 const colorPicker = document.querySelector<HTMLInputElement>('#color-picker')!
+const colorPickerWrapper =
+  document.querySelector<HTMLLabelElement>('.color-picker')!
+const styleToggle = document.querySelector<HTMLButtonElement>('#style-toggle')!
+const styleMenu = document.querySelector<HTMLDivElement>('#style-menu')!
+const styleLabel = document.querySelector<HTMLSpanElement>('#style-label')!
+const styleSection = document.querySelector<HTMLElement>('.style-section')!
 
 const QR_MARGIN = 1
 const QR_ECC = 'M'
-const DEFAULT_URL = 'https://qrblink.net'
-let currentUrl = ''
+const DEFAULT_URL = 'https://marqr.net'
+let currentUrl = DEFAULT_URL
 let qrColor = '#000000'
+type StyleKey = 'rounded' | 'dots' | 'classy' | 'square'
+let currentStyle: StyleKey = 'square'
 
-function setCanvasSize() {
-  const size = Math.floor(previewSection.clientWidth || 300)
-  if (size > 0) {
-    qrCanvas.width = size
-    qrCanvas.height = size
+const STYLE_MAP: Record<
+  StyleKey,
+  {
+    dots: DotType
+    cornersSquare: CornerSquareType
+    cornersDot: CornerDotType
+    label: string
   }
-  return size
+> = {
+  rounded: {
+    dots: 'rounded',
+    cornersSquare: 'extra-rounded',
+    cornersDot: 'dot',
+    label: 'Rounded'
+  },
+  dots: {
+    dots: 'dots',
+    cornersSquare: 'dot',
+    cornersDot: 'dot',
+    label: 'Dots'
+  },
+  classy: {
+    dots: 'classy',
+    cornersSquare: 'classy-rounded',
+    cornersDot: 'classy',
+    label: 'Classy'
+  },
+  square: {
+    dots: 'square',
+    cornersSquare: 'square',
+    cornersDot: 'square',
+    label: 'Square'
+  }
 }
 
-async function generateQRCode(text: string) {
-  try {
-    if (!text) {
-      await renderPlaceholder()
-      toggleDownloads(false)
-      return
-    }
+const qrCode = new QRCodeStyling({
+  width: 1024,
+  height: 1024,
+  type: 'svg',
+  data: DEFAULT_URL,
+  margin: QR_MARGIN,
+  qrOptions: { errorCorrectionLevel: QR_ECC },
+  dotsOptions: { color: qrColor, type: STYLE_MAP[currentStyle].dots },
+  cornersSquareOptions: {
+    color: qrColor,
+    type: STYLE_MAP[currentStyle].cornersSquare
+  },
+  cornersDotOptions: { color: qrColor, type: STYLE_MAP[currentStyle].cornersDot },
+  backgroundOptions: { color: '#FFFFFF' }
+})
 
-    await renderQr(text)
-    currentUrl = text
-    toggleDownloads(false)
-  } catch (err) {
-    console.error('Error generating QR code:', err)
-  }
+qrCode.append(qrTarget)
+
+function renderQr(data: string) {
+  qrCode.update({
+    type: 'svg',
+    data,
+    dotsOptions: { color: qrColor, type: STYLE_MAP[currentStyle].dots },
+    cornersSquareOptions: {
+      color: qrColor,
+      type: STYLE_MAP[currentStyle].cornersSquare
+    },
+    cornersDotOptions: { color: qrColor, type: STYLE_MAP[currentStyle].cornersDot },
+    backgroundOptions: { color: '#FFFFFF' }
+  })
+}
+
+function handleInput(text: string) {
+  const data = text.trim() || DEFAULT_URL
+  currentUrl = data
+  renderQr(data)
+  downloadPngBtn.disabled = false
+  downloadSvgBtn.disabled = false
 }
 
 urlInput.addEventListener('input', (e) => {
   const target = e.target as HTMLInputElement
-  generateQRCode(target.value)
+  handleInput(target.value)
 })
 
-window.addEventListener('resize', () => {
-  setCanvasSize()
-  if (currentUrl) {
-    generateQRCode(currentUrl)
+colorPicker.addEventListener('input', () => {
+  qrColor = colorPicker.value || '#000000'
+  updateColorPickerVisual(qrColor)
+  renderQr(currentUrl)
+})
+
+styleToggle.addEventListener('click', () => {
+  const isOpen = !styleMenu.hasAttribute('hidden')
+  if (isOpen) {
+    closeStyleMenu()
   } else {
-    renderPlaceholder()
+    openStyleMenu()
+  }
+})
+
+styleMenu.querySelectorAll<HTMLButtonElement>('button[data-style]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const styleKey = btn.getAttribute('data-style') as StyleKey
+    applyStyle(styleKey)
+    closeStyleMenu()
+  })
+})
+
+document.addEventListener('click', (e) => {
+  if (!styleMenu || styleMenu.hasAttribute('hidden')) return
+  if (!styleSection.contains(e.target as Node)) {
+    closeStyleMenu()
+  }
+})
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !styleMenu.hasAttribute('hidden')) {
+    closeStyleMenu()
   }
 })
 
 downloadPngBtn.addEventListener('click', async () => {
-  if (!currentUrl) return
-
-  try {
-    const dataUrl = await QRCode.toDataURL(currentUrl, {
-      width: 1024,
-      margin: QR_MARGIN,
-      color: getColors(),
-      errorCorrectionLevel: QR_ECC
-    })
-
-    const link = document.createElement('a')
-    link.download = 'qrcode.png'
-    link.href = dataUrl
-    link.click()
-  } catch (err) {
-    console.error('Error downloading QR code:', err)
-  }
+  await qrCode.download({ name: 'qrcode', extension: 'png' })
 })
 
 downloadSvgBtn.addEventListener('click', async () => {
-  if (!currentUrl) return
-
-  try {
-    const svgString = await QRCode.toString(currentUrl, {
-      type: 'svg',
-      margin: QR_MARGIN,
-      color: getColors(),
-      errorCorrectionLevel: QR_ECC,
-      scale: 1
-    })
-
-    const blob = new Blob([svgString], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
-
-    const link = document.createElement('a')
-    link.download = 'qrcode.svg'
-    link.href = url
-    link.click()
-
-    URL.revokeObjectURL(url)
-  } catch (err) {
-    console.error('Error downloading QR code as SVG:', err)
-  }
+  await qrCode.download({ name: 'qrcode', extension: 'svg' })
 })
 
-downloadPngBtn.disabled = true
-downloadSvgBtn.disabled = true
-setCanvasSize()
-renderPlaceholder()
+applyStyle(currentStyle, { rerender: false })
+updateColorPickerVisual(qrColor)
+handleInput('')
+closeStyleMenu()
 
-colorPicker.addEventListener('input', () => {
-  qrColor = colorPicker.value || '#000000'
-  if (currentUrl) {
-    generateQRCode(currentUrl)
-  } else {
-    renderPlaceholder()
+function applyStyle(style: StyleKey, opts: { rerender?: boolean } = {}) {
+  currentStyle = style
+  const meta = STYLE_MAP[style]
+  styleLabel.textContent = meta.label
+  styleToggle
+    .querySelector('.style-swatch')
+    ?.setAttribute('class', `style-swatch style-${style}`)
+  if (opts.rerender !== false) {
+    renderQr(currentUrl)
   }
-})
-
-async function renderQr(text: string) {
-  const size = setCanvasSize()
-  await QRCode.toCanvas(qrCanvas, text, {
-    width: size,
-    margin: QR_MARGIN,
-    color: getColors(),
-    errorCorrectionLevel: QR_ECC
-  })
 }
 
-async function renderPlaceholder() {
-  await renderQr(DEFAULT_URL)
-  currentUrl = DEFAULT_URL
-  toggleDownloads(false)
+function openStyleMenu() {
+  styleMenu.removeAttribute('hidden')
+  styleToggle.setAttribute('aria-expanded', 'true')
 }
 
-function toggleDownloads(disabled: boolean) {
-  downloadPngBtn.disabled = disabled
-  downloadSvgBtn.disabled = disabled
+function closeStyleMenu() {
+  styleMenu.setAttribute('hidden', '')
+  styleToggle.setAttribute('aria-expanded', 'false')
 }
 
-function getColors() {
-  return { dark: qrColor, light: '#FFFFFF' }
+function updateColorPickerVisual(color: string) {
+  colorPickerWrapper.style.setProperty('--picker-color', color)
 }
