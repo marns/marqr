@@ -1,0 +1,24 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "marqr",
+	"compatibility_date": "2025-11-21",
+	"assets": {
+		// The path to the directory containing the `index.html` file to be served at `/`
+		"directory": "../web/dist"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"main": "src/index.ts",
+	"d1_databases": [
+		{
+			"binding": "redirects",
+			"database_name": "redirects",
+			"database_id": "<DATABASE_ID>"
+		}
+	]
+}
