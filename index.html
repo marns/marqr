@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR BLINK</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="container">
+        <h1>QR BLINK.NET</h1>
+        <div class="input-section">
+          <input
+            type="text"
+            id="url-input"
+            placeholder="https://qrblink.net"
+            value=""
+          />
+        </div>
+        <div class="preview-section">
+          <canvas id="qr-canvas"></canvas>
+        </div>
+        <div class="button-section">
+          <div class="color-section">
+            <input type="color" id="color-picker" value="#000000" aria-label="QR color" />
+          </div>
+          <button id="download-btn" type="button" aria-label="Download PNG">
+            ⬇ PNG
+          </button>
+          <button id="download-svg-btn" type="button" aria-label="Download SVG">
+            ⬇ SVG
+          </button>
+        </div>
+        <div class="footer">
+          <p>💫 Free QR code generator without the BS</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
