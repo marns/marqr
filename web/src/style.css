@@ -128,9 +128,9 @@ h1 {
 
 .popover {
   position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 50;
 }
 
@@ -145,8 +145,7 @@ h1 {
 .popover-content {
   display: grid;
   max-height: calc(100dvh - 2rem);
-  min-width: min(420px, calc(100vw - 2rem));
-  max-width: min(var(--width-md), calc(100vw - 2rem));
+  width: min(var(--width-md), calc(100vw - 2rem));
   overflow: auto;
   gap: var(--gap-lg);
   background: rgba(26, 26, 26, 0.45);

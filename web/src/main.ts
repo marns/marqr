@@ -181,7 +181,7 @@ styleMenu.querySelectorAll<HTMLButtonElement>('button[data-style]').forEach((btn
 
 document.addEventListener('click', (e) => {
   if (!styleMenu || styleMenu.hasAttribute('hidden')) return
-  if (!styleSection.contains(e.target as Node)) {
+  if (styleSection && !styleSection.contains(e.target as Node)) {
     closeStyleMenu()
   }
 })
@@ -215,10 +215,10 @@ copyOwnerBtn.addEventListener('click', () => {
 ownerOpenBtn.addEventListener('click', () => {
   openOwnerPopover()
 })
-ownerBackdrop.addEventListener('click', () => closeOwnerPopover())
+ownerBackdrop.addEventListener('click', closeOwnerPopover)
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !ownerPopover.hasAttribute('hidden')) {
-    closeOwnerPopover()
+    dismissOwnerPopover()
   }
 })
 
@@ -261,13 +261,7 @@ function renderCreateView(opts: { empty?: boolean } = {}) {
   redirectInputCreate.value = opts.empty ? '' : urlInput.value.trim()
   setStatus(popoverStatusCreate, '')
 
-  // If there's an existing redirect, close button returns to edit view
-  const existingRedirect = activeRedirect
-  if (existingRedirect) {
-    ownerCloseBtn.onclick = () => renderEditView(existingRedirect)
-  } else {
-    ownerCloseBtn.onclick = () => closeOwnerPopover()
-  }
+  ownerCloseBtn.onclick = dismissOwnerPopover
 
   const handleCreate = async () => {
     const destination = redirectInputCreate.value.trim()
@@ -470,6 +464,14 @@ function closeOwnerPopover() {
   ownerPopover.setAttribute('hidden', '')
   ownerBackdrop.setAttribute('hidden', '')
   ownerOpenBtn.setAttribute('aria-expanded', 'false')
+}
+
+function dismissOwnerPopover() {
+  if (!createView.hidden && activeRedirect) {
+    renderEditView(activeRedirect)
+  } else {
+    closeOwnerPopover()
+  }
 }
 
 function showMainLink(record: RedirectRecord) {
