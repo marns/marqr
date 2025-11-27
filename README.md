@@ -1,19 +1,29 @@
 # marqr
 
+
 ## Web
 
 Simple QR code generator UI for creating quick, styled QR codes, powered by [qr-code-styling](https://github.com/kozakdenys/qr-code-styling)
 
 Live service: https://marqr.net
 
-### Running locally
-
+### Setup
 1. [Install pnpm](https://pnpm.io/installation)
-2. Run web (static)
 ```bash
 cd web
 pnpm i
-pnpm run dev
+```
+
+### Running locally
+
+```bash
+pnpm dev
+```
+
+### Build
+
+```bash
+pnpm build
 ```
 
 ## Edge
@@ -34,5 +44,5 @@ pnpm run deploy
 ```
 
 To create the database and schema for local development:
-npx wrangler d1 create redirects
+
 npx wrangler d1 execute redirects --local --file=src/schema.sql
