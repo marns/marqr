@@ -3,12 +3,13 @@ export interface Env {
     ASSETS?: Fetcher;
 }
 
-const slugLength = 8;
-const maxSlugValue = BigInt(36) ** BigInt(slugLength);
-const adminTokenBytes = 18; // ~24 chars when base64url encoded
+const slugLength = 6;
+const base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const maxSlugValue = BigInt(62) ** BigInt(slugLength);
+const secretBytes = 18; // ~24 chars when base64url encoded
 
 function generateSlug() {
-    // Generate 6 random bytes (48 bits), map to fixed-length base36 string.
+    // Generate 6 random bytes (48 bits), map to fixed-length base62 string.
     const bytes = new Uint8Array(6);
     crypto.getRandomValues(bytes);
 
@@ -17,8 +18,13 @@ function generateSlug() {
         num = (num << 8n) + BigInt(byte);
     }
 
-    const slugValue = num % maxSlugValue;
-    return slugValue.toString(36).padStart(slugLength, "0");
+    let slugValue = num % maxSlugValue;
+    let result = "";
+    for (let i = 0; i < slugLength; i++) {
+        result = base62Chars[Number(slugValue % 62n)] + result;
+        slugValue = slugValue / 62n;
+    }
+    return result;
 }
 
 function isUniqueConstraintError(error: unknown) {
@@ -35,8 +41,8 @@ function toBase64Url(bytes: Uint8Array) {
     return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function generateAdminToken() {
-    const bytes = new Uint8Array(adminTokenBytes);
+function generateSecret() {
+    const bytes = new Uint8Array(secretBytes);
     crypto.getRandomValues(bytes);
     return toBase64Url(bytes);
 }
@@ -65,23 +71,23 @@ export default {
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             const slug = generateSlug();
-            const token = generateAdminToken();
+            const secret = generateSecret();
 
             try {
-                await env.redirects.prepare("INSERT INTO redirects (slug, url, clicks, admin_secret) VALUES (?, ?, 0, ?)")
-                    .bind(slug, url, token)
+                await env.redirects.prepare("INSERT INTO redirects (slug, url, clicks, secret) VALUES (?, ?, 0, ?)")
+                    .bind(slug, url, secret)
                     .run();
 
                 console.log("Redirect created:", slug, url);
 
                 const shortUrl = `${origin}/${slug}`;
-                const manageUrl = `${origin}/?slug=${slug}&token=${token}`;
+                const manageUrl = `${origin}/?slug=${slug}&secret=${secret}`;
 
                 return jsonResponse({
                     slug,
                     url,
                     shortUrl,
-                    token,
+                    secret,
                     manageUrl,
                     clicks: 0,
                 });
@@ -118,7 +124,8 @@ export default {
         if (request.method === "GET" && url.pathname.startsWith("/api/url/")) {
             const segments = url.pathname.split("/").filter(Boolean);
             const slug = segments[2];
-            const adminToken = url.searchParams.get("token")
+            const secret = url.searchParams.get("secret")
+                ?? url.searchParams.get("token")
                 ?? url.searchParams.get("ownerToken")
                 ?? url.searchParams.get("adminToken");
 
@@ -126,31 +133,31 @@ export default {
                 return new Response("Missing slug", { status: 400 });
             }
 
-            if (!adminToken) {
-                return new Response("Missing admin token", { status: 401 });
+            if (!secret) {
+                return new Response("Missing secret", { status: 401 });
             }
 
-            const result = await env.redirects.prepare("SELECT slug, url, clicks, created_at, admin_secret FROM redirects WHERE slug = ?")
+            const result = await env.redirects.prepare("SELECT slug, url, clicks, created_at, secret FROM redirects WHERE slug = ?")
                 .bind(slug)
-                .first<{ slug: string; url: string; clicks: number; created_at: number; admin_secret: string }>();
+                .first<{ slug: string; url: string; clicks: number; created_at: number; secret: string }>();
 
             if (!result) {
                 return new Response("Not found", { status: 404 });
             }
 
-            if (result.admin_secret !== adminToken) {
+            if (result.secret !== secret) {
                 return new Response("Forbidden", { status: 403 });
             }
 
             const shortUrl = `${url.origin}/${result.slug}`;
-            const manageUrl = `${url.origin}/?slug=${result.slug}&token=${adminToken}`;
+            const manageUrl = `${url.origin}/?slug=${result.slug}&secret=${secret}`;
 
             return jsonResponse({
                 slug: result.slug,
                 url: result.url,
                 clicks: result.clicks,
                 createdAt: result.created_at,
-                token: adminToken,
+                secret,
                 shortUrl,
                 manageUrl,
             });
@@ -163,10 +170,10 @@ export default {
                 return new Response("Missing slug", { status: 400 });
             }
 
-            const body = await request.json() as { url?: string; adminToken?: string; ownerToken?: string; token?: string };
-            const token = body.token ?? body.ownerToken ?? body.adminToken;
-            if (!token) {
-                return new Response("Missing token", { status: 401 });
+            const body = await request.json() as { url?: string; secret?: string; token?: string; adminToken?: string; ownerToken?: string };
+            const secret = body.secret ?? body.token ?? body.ownerToken ?? body.adminToken;
+            if (!secret) {
+                return new Response("Missing secret", { status: 401 });
             }
             const targetUrl = body.url?.trim();
             if (!targetUrl || !isValidUrl(targetUrl)) {
@@ -174,9 +181,9 @@ export default {
             }
 
             const result = await env.redirects.prepare(
-                "UPDATE redirects SET url = ? WHERE slug = ? AND admin_secret = ?"
+                "UPDATE redirects SET url = ? WHERE slug = ? AND secret = ?"
             )
-                .bind(targetUrl, slug, token)
+                .bind(targetUrl, slug, secret)
                 .run();
 
             if (!result.success || result.meta.changes === 0) {
@@ -184,7 +191,7 @@ export default {
             }
 
             const shortUrl = `${url.origin}/${slug}`;
-            const manageUrl = `${url.origin}/?slug=${slug}&token=${token}`;
+            const manageUrl = `${url.origin}/?slug=${slug}&secret=${secret}`;
             const updated = await env.redirects.prepare(
                 "SELECT clicks, created_at FROM redirects WHERE slug = ?"
             )
@@ -195,7 +202,7 @@ export default {
                 slug,
                 url: targetUrl,
                 shortUrl,
-                token,
+                secret,
                 manageUrl,
                 clicks: updated?.clicks ?? null,
                 createdAt: updated?.created_at ?? null,

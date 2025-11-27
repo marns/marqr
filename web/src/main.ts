@@ -55,7 +55,7 @@ type RedirectRecord = {
   slug: string
   url: string
   shortUrl: string
-  token: string
+  secret: string
   manageUrl: string
   clicks?: number
   createdAt?: number
@@ -63,7 +63,7 @@ type RedirectRecord = {
 let activeRedirect: RedirectRecord | null = null
 let displayedShortUrl: string | null = null
 
-const LOCAL_STORAGE_KEY = 'marqr-token'
+const LOCAL_STORAGE_KEY = 'marqr-secret'
 const syncRedirectUI = () => {
   const hasRedirect = Boolean(activeRedirect)
   createView.hidden = hasRedirect
@@ -334,7 +334,7 @@ async function handleUpdateRedirect() {
     const record = await callJson<RedirectRecord>(`/api/url/${activeRedirect.slug}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: destination, token: activeRedirect.token })
+      body: JSON.stringify({ url: destination, secret: activeRedirect.secret })
     })
     applyRedirectState(record, { setQr: true })
     setStatus(redirectEditStatus, 'Updated.')
@@ -349,11 +349,11 @@ async function handleUpdateRedirect() {
 async function hydrateRedirectState() {
   const params = new URLSearchParams(window.location.search)
   const slug = params.get('slug')
-  const ownerToken = params.get('token') ?? params.get('ownerToken') ?? params.get('adminToken')
+  const secret = params.get('secret') ?? params.get('token') ?? params.get('ownerToken') ?? params.get('adminToken')
 
-  if (slug && ownerToken) {
+  if (slug && secret) {
     try {
-      const record = await fetchRedirect(slug, ownerToken)
+      const record = await fetchRedirect(slug, secret)
       applyRedirectState(record, { setQr: true })
       setStatus(redirectStatus, 'Loaded owner link for editing.')
       openOwnerPopover()
@@ -371,7 +371,7 @@ async function hydrateRedirectState() {
   if (cached) {
     try {
       const parsed = JSON.parse(cached) as RedirectRecord
-      if (parsed.slug && parsed.token) {
+      if (parsed.slug && parsed.secret) {
         applyRedirectState(parsed, { persist: false })
         setStatus(redirectStatus, 'Owner link restored on this device.')
         openOwnerPopover()
@@ -383,9 +383,9 @@ async function hydrateRedirectState() {
   }
 }
 
-async function fetchRedirect(slug: string, ownerToken: string) {
+async function fetchRedirect(slug: string, secret: string) {
   return callJson<RedirectRecord>(
-    `/api/url/${encodeURIComponent(slug)}?token=${encodeURIComponent(ownerToken)}`
+    `/api/url/${encodeURIComponent(slug)}?secret=${encodeURIComponent(secret)}`
   )
 }
 
@@ -410,7 +410,7 @@ function applyRedirectState(
 
   const params = new URLSearchParams(window.location.search)
   params.set('slug', record.slug)
-  params.set('token', record.token)
+  params.set('secret', record.secret)
   const newUrl = `${window.location.pathname}?${params.toString()}`
   window.history.replaceState({}, '', newUrl)
 
@@ -431,7 +431,7 @@ function resetRedirectState() {
   localStorage.removeItem(LOCAL_STORAGE_KEY)
   const params = new URLSearchParams(window.location.search)
   params.delete('slug')
-  params.delete('token')
+  params.delete('secret')
   const newUrl =
     params.toString().length > 0
       ? `${window.location.pathname}?${params.toString()}`
