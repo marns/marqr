@@ -1,6 +1,7 @@
 export interface Env {
     redirects: D1Database;
     ASSETS?: Fetcher;
+    BASE_URL?: string;
 }
 
 const slugLength = 6;
@@ -66,8 +67,9 @@ function jsonResponse(payload: unknown, status = 200) {
 
 export default {
 
-    async createRedirect(env: Env, url: string, origin: string) {
+    async createRedirect(env: Env, url: string, requestOrigin: string) {
         const maxAttempts = 4;
+        const origin = env.BASE_URL || requestOrigin;
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             const slug = generateSlug();
@@ -149,8 +151,9 @@ export default {
                 return new Response("Forbidden", { status: 403 });
             }
 
-            const shortUrl = `${url.origin}/${result.slug}`;
-            const manageUrl = `${url.origin}/?slug=${result.slug}&secret=${secret}`;
+            const origin = env.BASE_URL || url.origin;
+            const shortUrl = `${origin}/${result.slug}`;
+            const manageUrl = `${origin}/?slug=${result.slug}&secret=${secret}`;
 
             return jsonResponse({
                 slug: result.slug,
@@ -190,8 +193,9 @@ export default {
                 return new Response("Forbidden or not found", { status: 403 });
             }
 
-            const shortUrl = `${url.origin}/${slug}`;
-            const manageUrl = `${url.origin}/?slug=${slug}&secret=${secret}`;
+            const origin = env.BASE_URL || url.origin;
+            const shortUrl = `${origin}/${slug}`;
+            const manageUrl = `${origin}/?slug=${slug}&secret=${secret}`;
             const updated = await env.redirects.prepare(
                 "SELECT clicks, created_at FROM redirects WHERE slug = ?"
             )

@@ -9,6 +9,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8787',
         changeOrigin: true,
+      },
+      // Proxy short links (6-char alphanumeric slugs) to worker
+      '^/[a-zA-Z0-9]{6}$': {
+        target: 'http://localhost:8787',
+        changeOrigin: true,
       }
     }
   }
