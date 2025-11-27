@@ -62,12 +62,11 @@ type RedirectRecord = {
 }
 let activeRedirect: RedirectRecord | null = null
 let displayedShortUrl: string | null = null
+let isCreateMode = true
 
-const LOCAL_STORAGE_KEY = 'marqr-secret'
 const syncRedirectUI = () => {
-  const hasRedirect = Boolean(activeRedirect)
-  createView.hidden = hasRedirect
-  editView.hidden = !hasRedirect
+  createView.hidden = !isCreateMode
+  editView.hidden = isCreateMode
 }
 
 const STYLE_MAP: Record<
@@ -169,16 +168,16 @@ updateLinkBtn.addEventListener('click', () => {
 })
 
 newLinkBtn.addEventListener('click', () => {
-  resetRedirectState()
+  switchToCreateMode()
 })
 
 redirectInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault()
-    if (activeRedirect) {
-      void handleUpdateRedirect()
-    } else {
+    if (isCreateMode) {
       void handleCreateRedirect()
+    } else {
+      void handleUpdateRedirect()
     }
   }
 })
@@ -355,30 +354,15 @@ async function hydrateRedirectState() {
     try {
       const record = await fetchRedirect(slug, secret)
       applyRedirectState(record, { setQr: true })
+      redirectInput.value = record.url
+      showMainLink(record)
       setStatus(redirectStatus, 'Loaded owner link for editing.')
-      openOwnerPopover()
-      return
     } catch (error) {
       setStatus(
         redirectStatus,
         'Could not load owner link. It may be invalid or expired.',
         'error'
       )
-    }
-  }
-
-  const cached = localStorage.getItem(LOCAL_STORAGE_KEY)
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached) as RedirectRecord
-      if (parsed.slug && parsed.secret) {
-        applyRedirectState(parsed, { persist: false })
-        setStatus(redirectStatus, 'Owner link restored on this device.')
-        openOwnerPopover()
-      }
-    } catch (error) {
-      console.warn('Failed to parse cached owner link', error)
-      localStorage.removeItem(LOCAL_STORAGE_KEY)
     }
   }
 }
@@ -389,12 +373,10 @@ async function fetchRedirect(slug: string, secret: string) {
   )
 }
 
-function applyRedirectState(
-  record: RedirectRecord,
-  opts: { setQr?: boolean; persist?: boolean } = {}
-) {
+function applyRedirectState(record: RedirectRecord, opts: { setQr?: boolean } = {}) {
   const previousClicks = activeRedirect?.clicks
   activeRedirect = record
+  isCreateMode = false
   syncRedirectUI()
   shortUrlLink.textContent = record.shortUrl
   shortUrlLink.href = record.shortUrl
@@ -403,10 +385,6 @@ function applyRedirectState(
   const clicks =
     typeof record.clicks === 'number' && record.clicks >= 0 ? record.clicks : previousClicks
   clicksBadge.textContent = typeof clicks === 'number' ? `${clicks}` : '—'
-
-  if (opts.persist !== false) {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(record))
-  }
 
   const params = new URLSearchParams(window.location.search)
   params.set('slug', record.slug)
@@ -421,22 +399,11 @@ function applyRedirectState(
   }
 }
 
-function resetRedirectState() {
-  activeRedirect = null
+function switchToCreateMode() {
+  isCreateMode = true
   syncRedirectUI()
   setStatus(redirectStatus, '')
-  setStatus(redirectEditStatus, '')
   redirectInput.value = ''
-  hideMainLinkDisplay()
-  localStorage.removeItem(LOCAL_STORAGE_KEY)
-  const params = new URLSearchParams(window.location.search)
-  params.delete('slug')
-  params.delete('secret')
-  const newUrl =
-    params.toString().length > 0
-      ? `${window.location.pathname}?${params.toString()}`
-      : window.location.pathname
-  window.history.replaceState({}, '', newUrl)
 }
 
 async function callJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -487,6 +454,9 @@ function openOwnerPopover() {
   ownerPopover.removeAttribute('hidden')
   ownerBackdrop.removeAttribute('hidden')
   ownerOpenBtn.setAttribute('aria-expanded', 'true')
+  if (activeRedirect) {
+    isCreateMode = false
+  }
   syncRedirectUI()
 }
 
