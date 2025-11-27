@@ -65,142 +65,37 @@ function jsonResponse(payload: unknown, status = 200) {
     });
 }
 
-export default {
+function getOrigin(env: Env, requestOrigin: string) {
+    return env.BASE_URL || requestOrigin;
+}
 
-    async createRedirect(env: Env, url: string, requestOrigin: string) {
-        const maxAttempts = 4;
-        const origin = env.BASE_URL || requestOrigin;
+async function handleCreateRedirect(env: Env, request: Request, url: URL) {
+    const body = await request.json() as { url?: string };
+    const targetUrl = body.url?.trim();
 
-        for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const slug = generateSlug();
-            const secret = generateSecret();
+    if (!targetUrl) {
+        return new Response("Missing URL", { status: 400 });
+    }
+    if (!isValidUrl(targetUrl)) {
+        return new Response("Invalid URL", { status: 400 });
+    }
 
-            try {
-                await env.redirects.prepare("INSERT INTO redirects (slug, url, clicks, secret) VALUES (?, ?, 0, ?)")
-                    .bind(slug, url, secret)
-                    .run();
+    const maxAttempts = 4;
+    const origin = getOrigin(env, url.origin);
 
-                console.log("Redirect created:", slug, url);
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const slug = generateSlug();
+        const secret = generateSecret();
 
-                const shortUrl = `${origin}/${slug}`;
-                const manageUrl = `${origin}/?slug=${slug}&secret=${secret}`;
-
-                return jsonResponse({
-                    slug,
-                    url,
-                    shortUrl,
-                    secret,
-                    manageUrl,
-                    clicks: 0,
-                });
-            } catch (e) {
-                if (isUniqueConstraintError(e) && attempt < maxAttempts - 1) {
-                    console.warn("Slug collision, retrying:", slug);
-                    continue;
-                }
-
-                console.error("Error creating redirect:", e);
-                return new Response("Error creating redirect", { status: 500 });
-            }
-        }
-
-        return new Response("Error creating redirect", { status: 500 });
-    },
-
-    async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-        const url = new URL(request.url);
-
-        // Handle API requests
-        if (request.method === "POST" && url.pathname === "/api/url") {
-            const body = await request.json() as { url?: string };
-            const targetUrl = body.url?.trim();
-            if (!targetUrl) {
-                return new Response("Missing URL", { status: 400 });
-            }
-            if (!isValidUrl(targetUrl)) {
-                return new Response("Invalid URL", { status: 400 });
-            }
-            return this.createRedirect(env, targetUrl, url.origin);
-        }
-
-        if (request.method === "GET" && url.pathname.startsWith("/api/url/")) {
-            const segments = url.pathname.split("/").filter(Boolean);
-            const slug = segments[2];
-            const secret = url.searchParams.get("secret")
-                ?? url.searchParams.get("token")
-                ?? url.searchParams.get("ownerToken")
-                ?? url.searchParams.get("adminToken");
-
-            if (!slug) {
-                return new Response("Missing slug", { status: 400 });
-            }
-
-            if (!secret) {
-                return new Response("Missing secret", { status: 401 });
-            }
-
-            const result = await env.redirects.prepare("SELECT slug, url, clicks, created_at, secret FROM redirects WHERE slug = ?")
-                .bind(slug)
-                .first<{ slug: string; url: string; clicks: number; created_at: number; secret: string }>();
-
-            if (!result) {
-                return new Response("Not found", { status: 404 });
-            }
-
-            if (result.secret !== secret) {
-                return new Response("Forbidden", { status: 403 });
-            }
-
-            const origin = env.BASE_URL || url.origin;
-            const shortUrl = `${origin}/${result.slug}`;
-            const manageUrl = `${origin}/?slug=${result.slug}&secret=${secret}`;
-
-            return jsonResponse({
-                slug: result.slug,
-                url: result.url,
-                clicks: result.clicks,
-                createdAt: result.created_at,
-                secret,
-                shortUrl,
-                manageUrl,
-            });
-        }
-
-        if (request.method === "PATCH" && url.pathname.startsWith("/api/url/")) {
-            const segments = url.pathname.split("/").filter(Boolean);
-            const slug = segments[2];
-            if (!slug) {
-                return new Response("Missing slug", { status: 400 });
-            }
-
-            const body = await request.json() as { url?: string; secret?: string; token?: string; adminToken?: string; ownerToken?: string };
-            const secret = body.secret ?? body.token ?? body.ownerToken ?? body.adminToken;
-            if (!secret) {
-                return new Response("Missing secret", { status: 401 });
-            }
-            const targetUrl = body.url?.trim();
-            if (!targetUrl || !isValidUrl(targetUrl)) {
-                return new Response("Invalid URL", { status: 400 });
-            }
-
-            const result = await env.redirects.prepare(
-                "UPDATE redirects SET url = ? WHERE slug = ? AND secret = ?"
-            )
-                .bind(targetUrl, slug, secret)
+        try {
+            await env.redirects.prepare("INSERT INTO redirects (slug, url, clicks, secret) VALUES (?, ?, 0, ?)")
+                .bind(slug, targetUrl, secret)
                 .run();
 
-            if (!result.success || result.meta.changes === 0) {
-                return new Response("Forbidden or not found", { status: 403 });
-            }
+            console.log("Redirect created:", slug, targetUrl);
 
-            const origin = env.BASE_URL || url.origin;
             const shortUrl = `${origin}/${slug}`;
             const manageUrl = `${origin}/?slug=${slug}&secret=${secret}`;
-            const updated = await env.redirects.prepare(
-                "SELECT clicks, created_at FROM redirects WHERE slug = ?"
-            )
-                .bind(slug)
-                .first<{ clicks: number; created_at: number }>();
 
             return jsonResponse({
                 slug,
@@ -208,34 +103,163 @@ export default {
                 shortUrl,
                 secret,
                 manageUrl,
-                clicks: updated?.clicks ?? null,
-                createdAt: updated?.created_at ?? null,
+                clicks: 0,
             });
+        } catch (e) {
+            if (isUniqueConstraintError(e) && attempt < maxAttempts - 1) {
+                console.warn("Slug collision, retrying:", slug);
+                continue;
+            }
+
+            console.error("Error creating redirect:", e);
+            return new Response("Error creating redirect", { status: 500 });
+        }
+    }
+
+    return new Response("Error creating redirect", { status: 500 });
+}
+
+async function handleGetRedirect(env: Env, url: URL) {
+    const segments = url.pathname.split("/").filter(Boolean);
+    const slug = segments[2];
+    const secret = url.searchParams.get("secret")
+        ?? url.searchParams.get("token")
+        ?? url.searchParams.get("ownerToken")
+        ?? url.searchParams.get("adminToken");
+
+    if (!slug) {
+        return new Response("Missing slug", { status: 400 });
+    }
+
+    if (!secret) {
+        return new Response("Missing secret", { status: 401 });
+    }
+
+    const result = await env.redirects.prepare("SELECT slug, url, clicks, created_at, secret FROM redirects WHERE slug = ?")
+        .bind(slug)
+        .first<{ slug: string; url: string; clicks: number; created_at: number; secret: string }>();
+
+    if (!result) {
+        return new Response("Not found", { status: 404 });
+    }
+
+    if (result.secret !== secret) {
+        return new Response("Forbidden", { status: 403 });
+    }
+
+    const origin = getOrigin(env, url.origin);
+    const shortUrl = `${origin}/${result.slug}`;
+    const manageUrl = `${origin}/?slug=${result.slug}&secret=${secret}`;
+
+    return jsonResponse({
+        slug: result.slug,
+        url: result.url,
+        clicks: result.clicks,
+        createdAt: result.created_at,
+        secret,
+        shortUrl,
+        manageUrl,
+    });
+}
+
+async function handleUpdateRedirect(env: Env, request: Request, url: URL) {
+    const segments = url.pathname.split("/").filter(Boolean);
+    const slug = segments[2];
+
+    if (!slug) {
+        return new Response("Missing slug", { status: 400 });
+    }
+
+    const body = await request.json() as { url?: string; secret?: string; token?: string; adminToken?: string; ownerToken?: string };
+    const secret = body.secret ?? body.token ?? body.ownerToken ?? body.adminToken;
+
+    if (!secret) {
+        return new Response("Missing secret", { status: 401 });
+    }
+
+    const targetUrl = body.url?.trim();
+    if (!targetUrl || !isValidUrl(targetUrl)) {
+        return new Response("Invalid URL", { status: 400 });
+    }
+
+    const result = await env.redirects.prepare(
+        "UPDATE redirects SET url = ? WHERE slug = ? AND secret = ?"
+    )
+        .bind(targetUrl, slug, secret)
+        .run();
+
+    if (!result.success || result.meta.changes === 0) {
+        return new Response("Forbidden or not found", { status: 403 });
+    }
+
+    const origin = getOrigin(env, url.origin);
+    const shortUrl = `${origin}/${slug}`;
+    const manageUrl = `${origin}/?slug=${slug}&secret=${secret}`;
+    const updated = await env.redirects.prepare(
+        "SELECT clicks, created_at FROM redirects WHERE slug = ?"
+    )
+        .bind(slug)
+        .first<{ clicks: number; created_at: number }>();
+
+    return jsonResponse({
+        slug,
+        url: targetUrl,
+        shortUrl,
+        secret,
+        manageUrl,
+        clicks: updated?.clicks ?? null,
+        createdAt: updated?.created_at ?? null,
+    });
+}
+
+function handleRedirect(env: Env, ctx: ExecutionContext, slug: string) {
+    return async () => {
+        console.log("Redirect requested for slug:", slug);
+
+        const result = await env.redirects.prepare("SELECT url FROM redirects WHERE slug = ?")
+            .bind(slug)
+            .first<{ url: string }>();
+
+        if (!result) {
+            return new Response("Not found", { status: 404 });
         }
 
-        const slug = url.pathname.slice(1); // Remove leading slash
+        // Async update click count
+        ctx.waitUntil(
+            env.redirects.prepare("UPDATE redirects SET clicks = clicks + 1 WHERE slug = ?")
+                .bind(slug)
+                .run()
+        );
 
-        // If root or no slug, try to serve assets (frontend)
-        if (!slug || slug === "") {
-            return env.ASSETS ? env.ASSETS.fetch(request) : new Response("Not found", { status: 404 });
+        return Response.redirect(result.url, 302);
+    };
+}
+
+export default {
+    async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+        const url = new URL(request.url);
+
+        // API routes
+        if (url.pathname === "/api/url" && request.method === "POST") {
+            return handleCreateRedirect(env, request, url);
         }
 
-        // Query for the redirect URL
-        const stmt = env.redirects.prepare("SELECT url FROM redirects WHERE slug = ?").bind(slug);
-        const result = await stmt.first<{ url: string }>();
-
-        if (result) {
-            // Async update click count
-            ctx.waitUntil(
-                env.redirects.prepare("UPDATE redirects SET clicks = clicks + 1 WHERE slug = ?")
-                    .bind(slug)
-                    .run()
-            );
-
-            return Response.redirect(result.url, 302);
+        if (url.pathname.startsWith("/api/url/")) {
+            if (request.method === "GET") {
+                return handleGetRedirect(env, url);
+            }
+            if (request.method === "PATCH") {
+                return handleUpdateRedirect(env, request, url);
+            }
         }
 
-        // Fallback to assets if not a redirect (e.g. /assets/..., /favicon.ico)
+        // Redirect lookup for 6-char slugs
+        const slug = url.pathname.slice(1);
+        if (slug.length === slugLength) {
+            return handleRedirect(env, ctx, slug)();
+        }
+
+        // Serve frontend assets
         return env.ASSETS ? env.ASSETS.fetch(request) : new Response("Not found", { status: 404 });
     },
 };
