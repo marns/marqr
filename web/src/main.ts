@@ -62,12 +62,6 @@ type RedirectRecord = {
 }
 let activeRedirect: RedirectRecord | null = null
 let displayedShortUrl: string | null = null
-let isCreateMode = true
-
-const syncRedirectUI = () => {
-  createView.hidden = !isCreateMode
-  editView.hidden = isCreateMode
-}
 
 const STYLE_MAP: Record<
   StyleKey,
@@ -159,28 +153,6 @@ urlInput.addEventListener('keydown', (e) => {
   }
 })
 
-createLinkBtn.addEventListener('click', () => {
-  void handleCreateRedirect()
-})
-
-updateLinkBtn.addEventListener('click', () => {
-  void handleUpdateRedirect()
-})
-
-newLinkBtn.addEventListener('click', () => {
-  switchToCreateMode()
-})
-
-redirectInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault()
-    if (isCreateMode) {
-      void handleCreateRedirect()
-    } else {
-      void handleUpdateRedirect()
-    }
-  }
-})
 
 colorPicker.addEventListener('input', () => {
   qrColor = colorPicker.value || '#000000'
@@ -239,7 +211,6 @@ copyOwnerBtn.addEventListener('click', () => {
 })
 
 ownerOpenBtn.addEventListener('click', () => {
-  primeRedirectInput()
   openOwnerPopover()
 })
 ownerCloseBtn.addEventListener('click', () => closeOwnerPopover())
@@ -254,7 +225,7 @@ applyStyle(currentStyle, { rerender: false })
 updateColorPickerVisual(qrColor)
 handleInput('')
 closeStyleMenu()
-void hydrateRedirectState()
+void hydrateFromUrl()
 
 function applyStyle(style: StyleKey, opts: { rerender?: boolean } = {}) {
   currentStyle = style
@@ -282,70 +253,101 @@ function updateColorPickerVisual(color: string) {
   colorPickerWrapper.style.setProperty('--picker-color', color)
 }
 
-async function handleCreateRedirect() {
-  const destination = redirectInput.value.trim()
-  if (!destination) {
-    setStatus(redirectStatus, 'Enter a destination URL to shorten', 'error')
-    return
+function renderCreateView() {
+  createView.hidden = false
+  editView.hidden = true
+  redirectInput.value = urlInput.value.trim()
+  setStatus(redirectStatus, '')
+
+  const handleCreate = async () => {
+    const destination = redirectInput.value.trim()
+    if (!destination) {
+      setStatus(redirectStatus, 'Enter a destination URL to shorten', 'error')
+      return
+    }
+
+    setBusy(createLinkBtn, true)
+    setStatus(redirectStatus, 'Creating redirect...')
+
+    try {
+      const record = await callJson<RedirectRecord>('/api/url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: destination })
+      })
+      setActiveRedirect(record)
+      showMainLink(record)
+      renderEditView(record)
+    } catch (error) {
+      setStatus(redirectStatus, humanizeError(error), 'error')
+    } finally {
+      setBusy(createLinkBtn, false)
+    }
   }
 
-  setBusy(createLinkBtn, true)
-  setStatus(redirectStatus, 'Creating redirect...')
-
-  try {
-    const record = await callJson<RedirectRecord>('/api/url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: destination })
-    })
-    applyRedirectState(record, { setQr: true })
-    setStatus(redirectStatus, 'Redirect ready. Save the owner link.')
-    setStatus(redirectEditStatus, '')
-    openOwnerPopover()
-    showMainLink(record)
-  } catch (error) {
-    setStatus(redirectStatus, humanizeError(error), 'error')
-  } finally {
-    setBusy(createLinkBtn, false)
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      void handleCreate()
+    }
   }
+
+  createLinkBtn.onclick = () => void handleCreate()
+  redirectInput.onkeydown = onKeydown
 }
 
-async function handleUpdateRedirect() {
-  if (!activeRedirect) {
-    setStatus(
-      redirectEditStatus,
-      'Load an owner link first (create one or use the owner URL).',
-      'error'
-    )
-    return
+function renderEditView(record: RedirectRecord) {
+  createView.hidden = true
+  editView.hidden = false
+  redirectInput.value = record.url
+  setStatus(redirectEditStatus, '')
+
+  shortUrlLink.textContent = record.shortUrl
+  shortUrlLink.href = record.shortUrl
+  ownerUrlLink.textContent = record.manageUrl
+  ownerUrlLink.href = record.manageUrl
+  clicksBadge.textContent = typeof record.clicks === 'number' ? `${record.clicks}` : '—'
+
+  const handleUpdate = async () => {
+    const destination = redirectInput.value.trim()
+    if (!destination) {
+      setStatus(redirectEditStatus, 'Destination is required', 'error')
+      return
+    }
+
+    setBusy(updateLinkBtn, true)
+    setStatus(redirectEditStatus, 'Updating redirect...')
+
+    try {
+      const updated = await callJson<RedirectRecord>(`/api/url/${record.slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: destination, secret: record.secret })
+      })
+      setActiveRedirect(updated)
+      showMainLink(updated)
+      renderEditView(updated)
+      setStatus(redirectEditStatus, 'Updated.')
+    } catch (error) {
+      setStatus(redirectEditStatus, humanizeError(error), 'error')
+    } finally {
+      setBusy(updateLinkBtn, false)
+    }
   }
 
-  const destination = redirectInput.value.trim()
-  if (!destination) {
-    setStatus(redirectEditStatus, 'Destination is required', 'error')
-    return
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      void handleUpdate()
+    }
   }
 
-  setBusy(updateLinkBtn, true)
-  setStatus(redirectEditStatus, 'Updating redirect...')
-
-  try {
-    const record = await callJson<RedirectRecord>(`/api/url/${activeRedirect.slug}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: destination, secret: activeRedirect.secret })
-    })
-    applyRedirectState(record, { setQr: true })
-    setStatus(redirectEditStatus, 'Updated.')
-    showMainLink(record)
-  } catch (error) {
-    setStatus(redirectEditStatus, humanizeError(error), 'error')
-  } finally {
-    setBusy(updateLinkBtn, false)
-  }
+  updateLinkBtn.onclick = () => void handleUpdate()
+  newLinkBtn.onclick = () => renderCreateView()
+  redirectInput.onkeydown = onKeydown
 }
 
-async function hydrateRedirectState() {
+async function hydrateFromUrl() {
   const params = new URLSearchParams(window.location.search)
   const slug = params.get('slug')
   const secret = params.get('secret') ?? params.get('token') ?? params.get('ownerToken') ?? params.get('adminToken')
@@ -353,16 +355,13 @@ async function hydrateRedirectState() {
   if (slug && secret) {
     try {
       const record = await fetchRedirect(slug, secret)
-      applyRedirectState(record, { setQr: true })
-      redirectInput.value = record.url
+      setActiveRedirect(record)
+      urlInput.value = record.shortUrl
+      displayedShortUrl = record.shortUrl
+      handleInput(record.shortUrl)
       showMainLink(record)
-      setStatus(redirectStatus, 'Loaded owner link for editing.')
     } catch (error) {
-      setStatus(
-        redirectStatus,
-        'Could not load owner link. It may be invalid or expired.',
-        'error'
-      )
+      console.error('Could not load owner link', error)
     }
   }
 }
@@ -373,18 +372,8 @@ async function fetchRedirect(slug: string, secret: string) {
   )
 }
 
-function applyRedirectState(record: RedirectRecord, opts: { setQr?: boolean } = {}) {
-  const previousClicks = activeRedirect?.clicks
+function setActiveRedirect(record: RedirectRecord) {
   activeRedirect = record
-  isCreateMode = false
-  syncRedirectUI()
-  shortUrlLink.textContent = record.shortUrl
-  shortUrlLink.href = record.shortUrl
-  ownerUrlLink.textContent = record.manageUrl
-  ownerUrlLink.href = record.manageUrl
-  const clicks =
-    typeof record.clicks === 'number' && record.clicks >= 0 ? record.clicks : previousClicks
-  clicksBadge.textContent = typeof clicks === 'number' ? `${clicks}` : '—'
 
   const params = new URLSearchParams(window.location.search)
   params.set('slug', record.slug)
@@ -392,18 +381,9 @@ function applyRedirectState(record: RedirectRecord, opts: { setQr?: boolean } = 
   const newUrl = `${window.location.pathname}?${params.toString()}`
   window.history.replaceState({}, '', newUrl)
 
-  if (opts.setQr) {
-    urlInput.value = record.shortUrl
-    displayedShortUrl = record.shortUrl
-    handleInput(record.shortUrl)
-  }
-}
-
-function switchToCreateMode() {
-  isCreateMode = true
-  syncRedirectUI()
-  setStatus(redirectStatus, '')
-  redirectInput.value = ''
+  urlInput.value = record.shortUrl
+  displayedShortUrl = record.shortUrl
+  handleInput(record.shortUrl)
 }
 
 async function callJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -455,9 +435,10 @@ function openOwnerPopover() {
   ownerBackdrop.removeAttribute('hidden')
   ownerOpenBtn.setAttribute('aria-expanded', 'true')
   if (activeRedirect) {
-    isCreateMode = false
+    renderEditView(activeRedirect)
+  } else {
+    renderCreateView()
   }
-  syncRedirectUI()
 }
 
 function closeOwnerPopover() {
@@ -480,14 +461,3 @@ function hideMainLinkDisplay() {
   currentShortLink.removeAttribute('href')
 }
 
-function primeRedirectInput() {
-  if (redirectInput.value.trim()) return
-  if (activeRedirect?.url) {
-    redirectInput.value = activeRedirect.url
-    return
-  }
-  const fromMain = urlInput.value.trim()
-  if (fromMain) {
-    redirectInput.value = fromMain
-  }
-}
