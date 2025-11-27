@@ -54,7 +54,7 @@
   /* Layout */
   --width-xs: 150px;
   --width-sm: 280px;
-  --width-md: 520px;
+  --width-md: 620px;
   --width-lg: 960px;
   --width-input-min: 240px;
   --width-menu-min: 180px;
@@ -145,9 +145,10 @@ h1 {
 .popover-content {
   display: grid;
   max-height: calc(100vh - 2rem);
+  min-width: min(420px, calc(100vw - 2rem));
   max-width: min(var(--width-md), calc(100vw - 2rem));
   overflow: auto;
-  gap: var(--gap-2xl);
+  gap: var(--gap-lg);
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-2xl);
@@ -159,16 +160,15 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--gap-xl);
-}
-
-.popover-head > .icon-btn {
-  align-self: flex-start;
 }
 
 .popover-section {
   display: grid;
-  gap: var(--gap-lg);
+  gap: var(--gap-md);
+}
+
+.popover-section > .eyebrow {
+  margin-bottom: var(--gap-xs);
 }
 
 /* Pill is used for Clicks */
@@ -198,11 +198,15 @@ h1 {
   gap: var(--gap-md);
 }
 
-.form-row {
+.form-row,
+.input-row {
   display: flex;
   align-items: center;
-  gap: var(--gap-lg);
+  gap: var(--gap-md);
   width: 100%;
+}
+
+.form-row {
   flex-wrap: wrap;
 }
 
@@ -249,7 +253,10 @@ h1 {
 .meta {
   display: grid;
   gap: var(--gap-xl);
-  margin-top: var(--gap-xl);
+  margin-top: var(--gap-lg);
+  padding: var(--gap-lg) 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .meta-row {
@@ -261,6 +268,7 @@ h1 {
 
 .meta-row.compact {
   grid-template-columns: 1fr auto;
+  align-items: center;
 }
 
 .meta-row > .label {
@@ -318,6 +326,13 @@ h1 {
   transform: translateX(-50%) scale(1);
 }
 
+.sublabel {
+  margin-top: calc(-1 * var(--gap-md));
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--placeholder);
+}
+
 .helper {
   margin: 0.2rem 0;
   font-size: 0.95rem;
@@ -326,6 +341,10 @@ h1 {
 
 .helper[data-variant='error'] {
   color: var(--error);
+}
+
+.helper[data-variant='success'] {
+  color: var(--success, #22c55e);
 }
 
 .ghost {
@@ -386,14 +405,15 @@ h1 {
   max-width: var(--content-max);
 }
 
-.form-row input {
+.form-row input,
+.input-row input {
   flex: 1 1 var(--width-input-min);
   min-width: 0;
 }
 
-.form-row button {
+.form-row button,
+.input-row button {
   white-space: nowrap;
-  margin-left: auto;
   flex: 0 0 auto;
 }
 

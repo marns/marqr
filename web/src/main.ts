@@ -6,8 +6,10 @@ import QRCodeStyling, {
 } from 'qr-code-styling'
 
 const urlInput = document.querySelector<HTMLInputElement>('#url-input')!
-const redirectInput =
-  document.querySelector<HTMLInputElement>('#redirect-input')!
+const redirectInputCreate =
+  document.querySelector<HTMLInputElement>('#redirect-input-create')!
+const redirectInputEdit =
+  document.querySelector<HTMLInputElement>('#redirect-input-edit')!
 const currentLink = document.querySelector<HTMLDivElement>('#current-link')!
 const currentShortLink =
   document.querySelector<HTMLAnchorElement>('#current-short')!
@@ -23,16 +25,16 @@ const styleToggle = document.querySelector<HTMLButtonElement>('#style-toggle')!
 const styleMenu = document.querySelector<HTMLDivElement>('#style-menu')!
 const styleLabel = document.querySelector<HTMLSpanElement>('#style-label')!
 const styleSection = document.querySelector<HTMLElement>('.style-section')!
-const redirectStatus =
-  document.querySelector<HTMLParagraphElement>('#redirect-status')!
+const popoverStatusCreate =
+  document.querySelector<HTMLParagraphElement>('#popover-status-create')!
+const popoverStatusEdit =
+  document.querySelector<HTMLParagraphElement>('#popover-status-edit')!
 const shortUrlLink = document.querySelector<HTMLAnchorElement>('#short-url')!
 const ownerUrlLink = document.querySelector<HTMLAnchorElement>('#owner-url')!
 const copyShortBtn =
   document.querySelector<HTMLButtonElement>('#copy-short-url')!
 const copyOwnerBtn =
   document.querySelector<HTMLButtonElement>('#copy-owner-url')!
-const redirectEditStatus =
-  document.querySelector<HTMLParagraphElement>('#redirect-edit-status')!
 const clicksBadge = document.querySelector<HTMLSpanElement>('#redirect-clicks')!
 const ownerOpenBtn = document.querySelector<HTMLButtonElement>('#owner-toggle')!
 const ownerCloseBtn = document.querySelector<HTMLButtonElement>('#owner-close')!
@@ -213,7 +215,6 @@ copyOwnerBtn.addEventListener('click', () => {
 ownerOpenBtn.addEventListener('click', () => {
   openOwnerPopover()
 })
-ownerCloseBtn.addEventListener('click', () => closeOwnerPopover())
 ownerBackdrop.addEventListener('click', () => closeOwnerPopover())
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !ownerPopover.hasAttribute('hidden')) {
@@ -253,21 +254,30 @@ function updateColorPickerVisual(color: string) {
   colorPickerWrapper.style.setProperty('--picker-color', color)
 }
 
-function renderCreateView() {
+function renderCreateView(opts: { empty?: boolean } = {}) {
   createView.hidden = false
   editView.hidden = true
-  redirectInput.value = urlInput.value.trim()
-  setStatus(redirectStatus, '')
+  newLinkBtn.hidden = true
+  redirectInputCreate.value = opts.empty ? '' : urlInput.value.trim()
+  setStatus(popoverStatusCreate, '')
+
+  // If there's an existing redirect, close button returns to edit view
+  const existingRedirect = activeRedirect
+  if (existingRedirect) {
+    ownerCloseBtn.onclick = () => renderEditView(existingRedirect)
+  } else {
+    ownerCloseBtn.onclick = () => closeOwnerPopover()
+  }
 
   const handleCreate = async () => {
-    const destination = redirectInput.value.trim()
+    const destination = redirectInputCreate.value.trim()
     if (!destination) {
-      setStatus(redirectStatus, 'Enter a destination URL to shorten', 'error')
+      setStatus(popoverStatusCreate, 'Enter a destination URL to shorten', 'error')
       return
     }
 
     setBusy(createLinkBtn, true)
-    setStatus(redirectStatus, 'Creating redirect...')
+    setStatus(popoverStatusCreate, 'Creating...')
 
     try {
       const record = await callJson<RedirectRecord>('/api/url', {
@@ -277,9 +287,9 @@ function renderCreateView() {
       })
       setActiveRedirect(record)
       showMainLink(record)
-      renderEditView(record)
+      renderEditView(record, { isNew: true })
     } catch (error) {
-      setStatus(redirectStatus, humanizeError(error), 'error')
+      setStatus(popoverStatusCreate, humanizeError(error), 'error')
     } finally {
       setBusy(createLinkBtn, false)
     }
@@ -293,14 +303,22 @@ function renderCreateView() {
   }
 
   createLinkBtn.onclick = () => void handleCreate()
-  redirectInput.onkeydown = onKeydown
+  redirectInputCreate.onkeydown = onKeydown
 }
 
-function renderEditView(record: RedirectRecord) {
+function renderEditView(record: RedirectRecord, opts: { isNew?: boolean } = {}) {
   createView.hidden = true
   editView.hidden = false
-  redirectInput.value = record.url
-  setStatus(redirectEditStatus, '')
+  newLinkBtn.hidden = false
+  redirectInputEdit.value = record.url
+
+  ownerCloseBtn.onclick = () => closeOwnerPopover()
+
+  if (opts.isNew) {
+    setStatus(popoverStatusEdit, 'Link created.', 'success')
+  } else {
+    setStatus(popoverStatusEdit, '')
+  }
 
   shortUrlLink.textContent = record.shortUrl
   shortUrlLink.href = record.shortUrl
@@ -308,15 +326,22 @@ function renderEditView(record: RedirectRecord) {
   ownerUrlLink.href = record.manageUrl
   clicksBadge.textContent = typeof record.clicks === 'number' ? `${record.clicks}` : '—'
 
+  updateLinkBtn.disabled = true
+
+  const syncUpdateButton = () => {
+    const hasChanged = redirectInputEdit.value.trim() !== record.url
+    updateLinkBtn.disabled = !hasChanged
+  }
+
   const handleUpdate = async () => {
-    const destination = redirectInput.value.trim()
+    const destination = redirectInputEdit.value.trim()
     if (!destination) {
-      setStatus(redirectEditStatus, 'Destination is required', 'error')
+      setStatus(popoverStatusEdit, 'Destination is required', 'error')
       return
     }
 
     setBusy(updateLinkBtn, true)
-    setStatus(redirectEditStatus, 'Updating redirect...')
+    setStatus(popoverStatusEdit, 'Saving...')
 
     try {
       const updated = await callJson<RedirectRecord>(`/api/url/${record.slug}`, {
@@ -327,24 +352,24 @@ function renderEditView(record: RedirectRecord) {
       setActiveRedirect(updated)
       showMainLink(updated)
       renderEditView(updated)
-      setStatus(redirectEditStatus, 'Updated.')
+      setStatus(popoverStatusEdit, 'Saved.', 'success')
     } catch (error) {
-      setStatus(redirectEditStatus, humanizeError(error), 'error')
-    } finally {
       setBusy(updateLinkBtn, false)
+      setStatus(popoverStatusEdit, humanizeError(error), 'error')
     }
   }
 
   const onKeydown = (e: KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !updateLinkBtn.disabled) {
       e.preventDefault()
       void handleUpdate()
     }
   }
 
   updateLinkBtn.onclick = () => void handleUpdate()
-  newLinkBtn.onclick = () => renderCreateView()
-  redirectInput.onkeydown = onKeydown
+  newLinkBtn.onclick = () => renderCreateView({ empty: true })
+  redirectInputEdit.oninput = syncUpdateButton
+  redirectInputEdit.onkeydown = onKeydown
 }
 
 async function hydrateFromUrl() {
@@ -408,7 +433,7 @@ function setBusy(button: HTMLButtonElement, isBusy: boolean) {
   button.dataset.loading = isBusy ? 'true' : 'false'
 }
 
-function setStatus(el: HTMLElement, message: string, variant: 'info' | 'error' = 'info') {
+function setStatus(el: HTMLElement, message: string, variant: 'info' | 'error' | 'success' = 'info') {
   el.textContent = message
   el.dataset.variant = variant
 }
@@ -421,7 +446,7 @@ async function copyToClipboard(text: string, button: HTMLButtonElement) {
       button.dataset.tooltip = ''
     }, 1200)
   } catch (error) {
-    setStatus(redirectStatus, 'Clipboard is blocked in this browser', 'error')
+    setStatus(popoverStatusEdit, 'Clipboard is blocked in this browser', 'error')
   }
 }
 

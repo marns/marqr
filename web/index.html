@@ -86,28 +86,25 @@
   <div id="owner-popover" class="popover" hidden role="dialog" aria-modal="true">
     <div class="popover-content">
       <div class="popover-head">
-        <p class="eyebrow">Dynamic link to</p>
         <button id="owner-close" type="button" class="icon-btn" aria-label="Close dialog">✕</button>
-      </div>
-      <div class="popover-section">
-        <input type="text" class="text-input" id="redirect-input" placeholder="https://marqr.net" value="" />
+        <button id="new-link" type="button" class="icon-btn" hidden aria-label="New link">+ New link</button>
       </div>
       <div id="redirect-create-view" class="popover-section">
-        <div class="form-row">
-          <button id="link-create" type="button">Create link</button>
-        </div>
-        <p id="redirect-status" class="helper" aria-live="polite"></p>
+        <p class="eyebrow">Dynamic link to</p>
+        <input type="text" class="text-input" id="redirect-input-create" placeholder="https://marqr.net" value="" />
+        <button id="link-create" type="button">Create link</button>
+        <p id="popover-status-create" class="helper" aria-live="polite"></p>
       </div>
       <div id="redirect-edit-view" class="popover-section" hidden>
-        <div>
-          <button id="link-update" type="button">Update link</button>
-          <button id="new-link" type="button" class="ghost">New link</button>
+        <p class="eyebrow">Dynamic link to</p>
+        <div class="input-row">
+          <input type="text" class="text-input" id="redirect-input-edit" placeholder="https://marqr.net" value="" />
+          <button id="link-update" type="button">Save</button>
         </div>
+        <p id="popover-status-edit" class="helper" aria-live="polite"></p>
         <p class="helper">
-          You can change your redirect any time. Just save your owner link below and keep it safe.
+          You can change your redirect any time. Just save your <i>Manage link</i> below and keep it safe.
         </p>
-        <p id="redirect-edit-status" class="helper" aria-live="polite"></p>
-
         <div id="redirect-result" class="meta">
           <div class="meta-row">
             <span class="label">Short link</span>
@@ -122,9 +119,10 @@
             </div>
           </div>
           <div class="meta-row">
-            <span class="label">Owner link</span>
+            <span class="label">Manage link</span>
+            <span class="sublabel">Keep it secret. Keep it safe.</span>
             <div class="meta-value">
-              <button id="copy-owner-url" type="button" class="icon-btn" aria-label="Copy owner link">
+              <button id="copy-owner-url" type="button" class="icon-btn" aria-label="Copy manage link">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -133,10 +131,10 @@
               <a id="owner-url" target="_blank" rel="noreferrer">—</a>
             </div>
           </div>
-          <div class="meta-row compact">
-            <span class="label">Clicks</span>
-            <span class="pill pill-quiet" id="redirect-clicks">0</span>
-          </div>
+        </div>
+        <div class="meta-row compact">
+          <span class="label">Clicks</span>
+          <span class="pill pill-quiet" id="redirect-clicks">0</span>
         </div>
       </div>
     </div>
