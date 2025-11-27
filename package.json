@@ -1,0 +1,9 @@
+{
+  "name": "marqr-monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r --filter ./web --filter ./edge dev",
+    "build": "pnpm --dir edge run build",
+    "deploy": "pnpm --dir edge run deploy"
+  }
+}
