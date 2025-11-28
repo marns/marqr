@@ -1,0 +1,4 @@
+.claude/
+.wrangler/
+wrangler.jsonc
+wrangler.dev.jsonc

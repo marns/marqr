@@ -1,0 +1,6 @@
+# marqr.net robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://marqr.net/sitemap.xml

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Free QR Code Generator - No Signup | marqr.net</title>
+  <meta name="description" content="Create custom QR codes instantly. Choose styles, colors, and download as PNG or SVG. Free, fast, and no account required. Create dynamic links you can update anytime." />
+  <link rel="canonical" href="https://marqr.net/" />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "marqr",
+    "url": "https://marqr.net",
+    "description": "Free QR code generator with custom styles and colors. Create static or dynamic QR codes instantly.",
+    "applicationCategory": "UtilityApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "Custom QR code styles",
+      "Color customization",
+      "PNG and SVG download",
+      "Dynamic links with analytics"
+    ]
+  }
+  </script>
+
+  <link rel="icon" type="image/png" href="/src/assets/qr.png" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <header class="content-block">
+      <p class="eyebrow">marqr</p>
+      <h1>Paste a URL, get a QR</h1>
+      <p>
+        Tap the wand if you need a dynamic link.
+      </p>
+    </header>
+
+    <div class="preview-section content-block">
+      <div id="qr-target"></div>
+    </div>
+    <div class="controls-row content-block">
+      <input type="text" id="url-input" class="text-input" placeholder="https://marqr.net" value="" />
+      <button id="owner-toggle" class="ghost" type="button" aria-expanded="false">
+        <span aria-hidden="true">🪄</span>
+        <span class="sr-only">dynamic</span>
+      </button>
+    </div>
+    <p class="current-link content-block" id="current-link" hidden>
+      <span class="redirect-arrow">→</span> <a id="current-short" target="_blank" rel="noreferrer">—</a>
+    </p>
+    <div class="controls-row">
+      <div class="style-toggle-wrapper">
+        <button id="style-toggle" type="button" aria-expanded="false">
+          <span class="style-swatch style-square"></span>
+          <span id="style-label">Square</span>
+        </button>
+        <div class="style-menu" id="style-menu" hidden>
+          <button type="button" data-style="rounded">
+            <span class="style-swatch style-rounded"></span>Rounded
+          </button>
+          <button type="button" data-style="dots">
+            <span class="style-swatch style-dots"></span>Dots
+          </button>
+          <button type="button" data-style="classy">
+            <span class="style-swatch style-classy"></span>Classy
+          </button>
+          <button type="button" data-style="square">
+            <span class="style-swatch style-square"></span>Square
+          </button>
+        </div>
+      </div>
+      <label class="color-picker">
+          <input type="color" id="color-picker" value="#000000" aria-label="QR color" />
+          <svg aria-hidden="true" viewBox="0 0 492.449 492.449" role="img" fill="currentColor">
+            <path
+              d="M492.19,255.101c-2.954-65.279-31.045-127.694-79.098-175.748c-25.675-25.675-55.349-45.636-88.195-59.328 C293.024,6.739,259.809,0.003,226.174,0.003c-61.758,0-118.927,23.158-160.978,65.208c-30.067,30.066-50.775,68.312-59.888,110.6 c-8.761,40.661-6.646,84.015,6.12,125.374l42.297,9.543c17.819-19.393,43.128-30.516,69.437-30.516 c51.983,0,94.274,42.292,94.274,94.275c0,25.455-9.997,49.316-28.15,67.186l11.031,41.955c21.707,5.852,43.898,8.816,65.957,8.818 c0.008,0,0.006,0,0.014,0c61.742,0,118.907-23.154,160.948-65.195C472.114,382.37,495.182,321.233,492.19,255.101z M323.777,77.013 c20.856,0,37.765,16.907,37.765,37.764c0,20.857-16.907,37.764-37.765,37.764c-20.856,0-37.764-16.907-37.764-37.764 C286.013,93.92,302.921,77.013,323.777,77.013z M101.7,203.304c-20.856,0-37.764-16.907-37.764-37.764s16.907-37.764,37.764-37.764 s37.764,16.907,37.764,37.764S122.556,203.304,101.7,203.304z M201.028,127.777c-20.856,0-37.764-16.907-37.764-37.764 s16.907-37.764,37.764-37.764c20.857,0,37.764,16.907,37.764,37.764S221.884,127.777,201.028,127.777z M326.112,409.29 c-29.821,0-53.996-24.175-53.996-53.997c0-29.821,24.175-53.997,53.996-53.997c29.822,0,53.997,24.176,53.997,53.997 C380.109,385.115,355.933,409.29,326.112,409.29z M396.607,266.935c-20.855,0-37.764-16.906-37.764-37.763 c0-20.857,16.907-37.764,37.764-37.764c20.857,0,37.765,16.907,37.765,37.764C434.372,250.028,417.464,266.935,396.607,266.935z" />
+          </svg>
+      </label>
+      <button id="download-btn" type="button" aria-label="Download PNG">
+        ⬇ PNG
+      </button>
+      <button id="download-svg-btn" type="button" aria-label="Download SVG">
+        ⬇ SVG
+      </button>
+    </div>
+
+  </div>
+
+  <div class="controls-row footer">
+    <p>💫 Free QR code generator, no nonsense</p>
+
+    <a href="https://github.com/marns/marqr" class="github-link" target="_blank" title="Open source on GitHub">
+      <svg width="24" height="24" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path fill-rule="evenodd" clip-rule="evenodd"
+          d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" />
+      </svg>
+    </a>
+  </div>
+
+  <!-- Dynamic links popover -->
+
+  <div id="owner-backdrop" class="backdrop" hidden></div>
+  <div id="owner-popover" class="popover" hidden role="dialog" aria-modal="true">
+    <div class="popover-content">
+      <div class="popover-head">
+        <button id="owner-close" type="button" class="icon-btn" aria-label="Close dialog">✕</button>
+        <button id="new-link" type="button" class="icon-btn" hidden aria-label="New link">+ New link</button>
+      </div>
+      <div id="redirect-create-view" class="popover-section">
+        <p class="eyebrow">Dynamic link to</p>
+        <input type="text" class="text-input" id="redirect-input-create" placeholder="https://marqr.net" value="" />
+        <button id="link-create" type="button">Create link</button>
+        <p id="popover-status-create" class="helper" aria-live="polite"></p>
+      </div>
+      <div id="redirect-edit-view" class="popover-section" hidden>
+        <p class="eyebrow">Dynamic link to</p>
+        <div class="input-row">
+          <input type="text" class="text-input" id="redirect-input-edit" placeholder="https://marqr.net" value="" />
+          <button id="link-update" type="button">Save</button>
+        </div>
+        <p id="popover-status-edit" class="helper" aria-live="polite"></p>
+        <p class="helper">
+          You can change your redirect any time. Just save your <i>Manage link</i> below and keep it safe.
+        </p>
+        <div id="redirect-result" class="meta">
+          <div class="meta-row">
+            <span class="label">Short link</span>
+            <div class="meta-value">
+              <button id="copy-short-url" type="button" class="icon-btn" aria-label="Copy short link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+              <a id="short-url" target="_blank" rel="noreferrer">—</a>
+            </div>
+          </div>
+          <div class="meta-row">
+            <span class="label">Manage link</span>
+            <span class="sublabel">Keep it secret. Keep it safe.</span>
+            <div class="meta-value">
+              <button id="copy-owner-url" type="button" class="icon-btn" aria-label="Copy manage link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+              <a id="owner-url" target="_blank" rel="noreferrer">—</a>
+            </div>
+          </div>
+        </div>
+        <div class="meta-row compact">
+          <span class="label">Clicks</span>
+          <span class="pill pill-quiet" id="redirect-clicks">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
