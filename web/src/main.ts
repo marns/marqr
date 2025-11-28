@@ -6,6 +6,7 @@ import QRCodeStyling, {
 } from 'qr-code-styling'
 
 const urlInput = document.querySelector<HTMLInputElement>('#url-input')!
+const inputWrapper = document.querySelector<HTMLDivElement>('.input-wrapper')!
 const redirectInputCreate =
   document.querySelector<HTMLInputElement>('#redirect-input-create')!
 const redirectInputEdit =
@@ -24,7 +25,7 @@ const colorPickerWrapper =
 const styleToggle = document.querySelector<HTMLButtonElement>('#style-toggle')!
 const styleMenu = document.querySelector<HTMLDivElement>('#style-menu')!
 const styleLabel = document.querySelector<HTMLSpanElement>('#style-label')!
-const styleSection = document.querySelector<HTMLElement>('.style-section')!
+const styleSection = document.querySelector<HTMLElement>('.style-toggle-wrapper')!
 const popoverStatusCreate =
   document.querySelector<HTMLParagraphElement>('#popover-status-create')!
 const popoverStatusEdit =
@@ -143,8 +144,12 @@ function handleInput(text: string) {
 urlInput.addEventListener('input', (e) => {
   const target = e.target as HTMLInputElement
   handleInput(target.value)
-  if (displayedShortUrl && target.value.trim() !== displayedShortUrl) {
-    hideMainLinkDisplay()
+  if (activeRedirect) {
+    if (target.value.trim() === activeRedirect.shortUrl) {
+      showMainLink(activeRedirect)
+    } else if (displayedShortUrl) {
+      hideMainLinkDisplay()
+    }
   }
 })
 
@@ -181,7 +186,7 @@ styleMenu.querySelectorAll<HTMLButtonElement>('button[data-style]').forEach((btn
 
 document.addEventListener('click', (e) => {
   if (!styleMenu || styleMenu.hasAttribute('hidden')) return
-  if (!styleSection.contains(e.target as Node)) {
+  if (styleSection && !styleSection.contains(e.target as Node)) {
     closeStyleMenu()
   }
 })
@@ -215,10 +220,10 @@ copyOwnerBtn.addEventListener('click', () => {
 ownerOpenBtn.addEventListener('click', () => {
   openOwnerPopover()
 })
-ownerBackdrop.addEventListener('click', () => closeOwnerPopover())
+ownerBackdrop.addEventListener('click', closeOwnerPopover)
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !ownerPopover.hasAttribute('hidden')) {
-    closeOwnerPopover()
+    dismissOwnerPopover()
   }
 })
 
@@ -261,13 +266,7 @@ function renderCreateView(opts: { empty?: boolean } = {}) {
   redirectInputCreate.value = opts.empty ? '' : urlInput.value.trim()
   setStatus(popoverStatusCreate, '')
 
-  // If there's an existing redirect, close button returns to edit view
-  const existingRedirect = activeRedirect
-  if (existingRedirect) {
-    ownerCloseBtn.onclick = () => renderEditView(existingRedirect)
-  } else {
-    ownerCloseBtn.onclick = () => closeOwnerPopover()
-  }
+  ownerCloseBtn.onclick = dismissOwnerPopover
 
   const handleCreate = async () => {
     const destination = redirectInputCreate.value.trim()
@@ -472,11 +471,20 @@ function closeOwnerPopover() {
   ownerOpenBtn.setAttribute('aria-expanded', 'false')
 }
 
+function dismissOwnerPopover() {
+  if (!createView.hidden && activeRedirect) {
+    renderEditView(activeRedirect)
+  } else {
+    closeOwnerPopover()
+  }
+}
+
 function showMainLink(record: RedirectRecord) {
   displayedShortUrl = record.shortUrl
   currentShortLink.textContent = record.url
   currentShortLink.href = record.url
   currentLink.hidden = false
+  inputWrapper.classList.add('has-redirect')
 }
 
 function hideMainLinkDisplay() {
@@ -484,5 +492,6 @@ function hideMainLinkDisplay() {
   currentLink.hidden = true
   currentShortLink.textContent = '—'
   currentShortLink.removeAttribute('href')
+  inputWrapper.classList.remove('has-redirect')
 }
 

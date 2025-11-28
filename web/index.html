@@ -50,7 +50,10 @@
       <div id="qr-target"></div>
     </div>
     <div class="controls-row content-block">
-      <input type="text" id="url-input" class="text-input" placeholder="https://marqr.net" value="" />
+      <div class="input-wrapper">
+        <span class="input-sparkle" aria-hidden="true">✦</span>
+        <input type="text" id="url-input" class="text-input" placeholder="https://marqr.net" value="" />
+      </div>
       <button id="owner-toggle" class="ghost" type="button" aria-expanded="false">
         <span aria-hidden="true">🪄</span>
         <span class="sr-only">dynamic</span>
@@ -61,7 +64,7 @@
     </p>
     <div class="controls-row">
       <div class="style-toggle-wrapper">
-        <button id="style-toggle" type="button" aria-expanded="false">
+        <button id="style-toggle" class="ghost" type="button" aria-expanded="false">
           <span class="style-swatch style-square"></span>
           <span id="style-label">Square</span>
         </button>
