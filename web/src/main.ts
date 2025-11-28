@@ -143,8 +143,12 @@ function handleInput(text: string) {
 urlInput.addEventListener('input', (e) => {
   const target = e.target as HTMLInputElement
   handleInput(target.value)
-  if (displayedShortUrl && target.value.trim() !== displayedShortUrl) {
-    hideMainLinkDisplay()
+  if (activeRedirect) {
+    if (target.value.trim() === activeRedirect.shortUrl) {
+      showMainLink(activeRedirect)
+    } else if (displayedShortUrl) {
+      hideMainLinkDisplay()
+    }
   }
 })
 
