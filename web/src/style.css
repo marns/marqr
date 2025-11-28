@@ -193,12 +193,6 @@ h1 {
   font-weight: 600;
 }
 
-.current-link-row {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-md);
-}
-
 .input-row {
   display: flex;
   align-items: center;

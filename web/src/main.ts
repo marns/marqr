@@ -25,7 +25,7 @@ const colorPickerWrapper =
 const styleToggle = document.querySelector<HTMLButtonElement>('#style-toggle')!
 const styleMenu = document.querySelector<HTMLDivElement>('#style-menu')!
 const styleLabel = document.querySelector<HTMLSpanElement>('#style-label')!
-const styleSection = document.querySelector<HTMLElement>('.style-section')!
+const styleSection = document.querySelector<HTMLElement>('.style-toggle-wrapper')!
 const popoverStatusCreate =
   document.querySelector<HTMLParagraphElement>('#popover-status-create')!
 const popoverStatusEdit =
