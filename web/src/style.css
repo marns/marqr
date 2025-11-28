@@ -58,20 +58,15 @@
   --width-lg: 960px;
   --width-input-min: 240px;
   --width-menu-min: 180px;
-  --width-label: 110px;
   --width-mobile: 320px;
   --content-max: clamp(var(--width-sm), 85vw, 540px);
 
   /* Sizes */
-  --size-icon-sm: 22px;
   --size-icon-md: 26px;
   --size-icon-lg: 32px;
   --size-btn-min: 40px;
   --size-btn-height: 50px;
   --size-picker: 50px;
-
-  /* Breakpoints */
-  --breakpoint-mobile: 640px;
 
   color-scheme: light dark;
   color: var(--text);
@@ -447,6 +442,7 @@ h1 {
   background: #f7f7f7;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   flex: 0 0 auto;
+  cursor: pointer;
 }
 
 .color-picker:is(:hover, :focus-within) {
@@ -458,6 +454,7 @@ h1 {
   position: absolute;
   inset: 0;
   opacity: 0;
+  cursor: pointer;
 }
 
 .color-picker svg {
@@ -559,8 +556,8 @@ h1 {
 
 .style-swatch {
   display: grid;
-  width: var(--size-icon-sm);
-  height: var(--size-icon-sm);
+  width: 22px;
+  height: 22px;
   border-radius: var(--radius-sm);
   background: linear-gradient(135deg, #3aa0ff 0%, #6fc2ff 100%);
   grid-template-columns: repeat(2, 1fr);
