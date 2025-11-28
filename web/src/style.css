@@ -395,10 +395,37 @@ h1 {
   color: var(--placeholder);
 }
 
-#url-input {
+.input-wrapper {
+  position: relative;
   flex: 1 1 0;
   min-width: 0;
   max-width: var(--content-max);
+}
+
+.input-wrapper #url-input {
+  width: 100%;
+  padding-left: 1em;
+  transition: padding-left var(--transition-medium);
+}
+
+.input-wrapper.has-redirect #url-input {
+  padding-left: 2em;
+}
+
+.input-sparkle {
+  position: absolute;
+  left: 0.75em;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9em;
+  color: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-medium);
+}
+
+.input-wrapper.has-redirect .input-sparkle {
+  opacity: 1;
 }
 
 .input-row input {

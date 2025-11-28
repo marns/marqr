@@ -6,6 +6,7 @@ import QRCodeStyling, {
 } from 'qr-code-styling'
 
 const urlInput = document.querySelector<HTMLInputElement>('#url-input')!
+const inputWrapper = document.querySelector<HTMLDivElement>('.input-wrapper')!
 const redirectInputCreate =
   document.querySelector<HTMLInputElement>('#redirect-input-create')!
 const redirectInputEdit =
@@ -483,6 +484,7 @@ function showMainLink(record: RedirectRecord) {
   currentShortLink.textContent = record.url
   currentShortLink.href = record.url
   currentLink.hidden = false
+  inputWrapper.classList.add('has-redirect')
 }
 
 function hideMainLinkDisplay() {
@@ -490,5 +492,6 @@ function hideMainLinkDisplay() {
   currentLink.hidden = true
   currentShortLink.textContent = '—'
   currentShortLink.removeAttribute('href')
+  inputWrapper.classList.remove('has-redirect')
 }
 
