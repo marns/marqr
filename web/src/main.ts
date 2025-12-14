@@ -15,6 +15,7 @@ const currentLink = document.querySelector<HTMLDivElement>('#current-link')!
 const currentShortLink =
   document.querySelector<HTMLAnchorElement>('#current-short')!
 const qrTarget = document.querySelector<HTMLDivElement>('#qr-target')!
+const previewSection = document.querySelector<HTMLDivElement>('.preview-section')!
 const downloadToggle =
   document.querySelector<HTMLButtonElement>('#download-toggle')!
 const downloadMenu = document.querySelector<HTMLDivElement>('#download-menu')!
@@ -26,6 +27,10 @@ const downloadSvgBtn =
 const colorPicker = document.querySelector<HTMLInputElement>('#color-picker')!
 const colorPickerWrapper =
   document.querySelector<HTMLLabelElement>('.color-picker')!
+const bgColorPicker = document.querySelector<HTMLInputElement>('#bg-color-picker')!
+const bgPickerWrapper = document.querySelector<HTMLDivElement>('.bg-picker-wrapper')!
+const bgPickerLabel = document.querySelector<HTMLLabelElement>('.bg-picker')!
+const bgTransparentToggle = document.querySelector<HTMLButtonElement>('#bg-transparent-toggle')!
 const styleToggle = document.querySelector<HTMLButtonElement>('#style-toggle')!
 const styleMenu = document.querySelector<HTMLDivElement>('#style-menu')!
 const styleLabel = document.querySelector<HTMLSpanElement>('#style-label')!
@@ -56,6 +61,7 @@ const QR_ECC = 'M'
 const DEFAULT_URL = 'https://marqr.net'
 let currentUrl = DEFAULT_URL
 let qrColor = '#000000'
+let bgColor: string | null = '#FFFFFF'
 type StyleKey = 'rounded' | 'dots' | 'classy' | 'square'
 let currentStyle: StyleKey = 'square'
 type RedirectRecord = {
@@ -133,7 +139,7 @@ function renderQr(data: string) {
       type: STYLE_MAP[currentStyle].cornersSquare
     },
     cornersDotOptions: { color: qrColor, type: STYLE_MAP[currentStyle].cornersDot },
-    backgroundOptions: { color: '#FFFFFF' }
+    backgroundOptions: bgColor ? { color: bgColor } : { color: 'transparent' }
   })
 }
 
@@ -166,6 +172,19 @@ urlInput.addEventListener('keydown', (e) => {
 colorPicker.addEventListener('input', () => {
   qrColor = colorPicker.value || '#000000'
   updateColorPickerVisual(qrColor)
+  renderQr(currentUrl)
+})
+
+bgColorPicker.addEventListener('input', () => {
+  bgColor = bgColorPicker.value || '#FFFFFF'
+  updateBgPickerVisual(bgColor)
+  setTransparentBackground(false)
+  renderQr(currentUrl)
+})
+
+bgTransparentToggle.addEventListener('click', () => {
+  const isTransparent = !bgPickerWrapper.classList.contains('is-transparent')
+  setTransparentBackground(isTransparent)
   renderQr(currentUrl)
 })
 
@@ -249,6 +268,7 @@ document.addEventListener('keydown', (e) => {
 
 applyStyle(currentStyle, { rerender: false })
 updateColorPickerVisual(qrColor)
+updateBgPickerVisual('#FFFFFF')
 handleInput('')
 closeStyleMenu()
 void hydrateFromUrl()
@@ -287,6 +307,17 @@ function closeDownloadMenu() {
 
 function updateColorPickerVisual(color: string) {
   colorPickerWrapper.style.setProperty('--picker-color', color)
+}
+
+function updateBgPickerVisual(color: string) {
+  bgPickerLabel.style.setProperty('--bg-picker-color', color)
+}
+
+function setTransparentBackground(isTransparent: boolean) {
+  bgPickerWrapper.classList.toggle('is-transparent', isTransparent)
+  previewSection.classList.toggle('is-transparent', isTransparent)
+  bgTransparentToggle.setAttribute('aria-pressed', String(isTransparent))
+  bgColor = isTransparent ? null : (bgColorPicker.value || '#FFFFFF')
 }
 
 function renderCreateView(opts: { empty?: boolean } = {}) {
@@ -524,4 +555,3 @@ function hideMainLinkDisplay() {
   currentShortLink.removeAttribute('href')
   inputWrapper.classList.remove('has-redirect')
 }
-
