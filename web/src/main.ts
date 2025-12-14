@@ -35,6 +35,9 @@ const styleToggle = document.querySelector<HTMLButtonElement>('#style-toggle')!
 const styleMenu = document.querySelector<HTMLDivElement>('#style-menu')!
 const styleLabel = document.querySelector<HTMLSpanElement>('#style-label')!
 const styleSection = document.querySelector<HTMLElement>('.style-toggle-wrapper')!
+const logoInput = document.querySelector<HTMLInputElement>('#logo-input')!
+const logoBtn = document.querySelector<HTMLButtonElement>('#logo-btn')!
+const logoRemoveBtn = document.querySelector<HTMLButtonElement>('#logo-remove')!
 const popoverStatusCreate =
   document.querySelector<HTMLParagraphElement>('#popover-status-create')!
 const popoverStatusEdit =
@@ -62,6 +65,7 @@ const DEFAULT_URL = 'https://marqr.net'
 let currentUrl = DEFAULT_URL
 let qrColor = '#000000'
 let bgColor: string | null = '#FFFFFF'
+let logoDataUrl: string | null = null
 type StyleKey = 'rounded' | 'dots' | 'classy' | 'square'
 let currentStyle: StyleKey = 'square'
 type RedirectRecord = {
@@ -130,9 +134,19 @@ const qrCode = new QRCodeStyling({
 qrCode.append(qrTarget)
 
 function renderQr(data: string) {
+  const imageOptions = {
+    hideBackgroundDots: true,
+    imageSize: 0.28,
+    margin: 24,
+    crossOrigin: 'anonymous' as const,
+    saveAsBlob: true
+  }
+
   qrCode.update({
     type: 'svg',
     data,
+    image: logoDataUrl ?? undefined,
+    imageOptions,
     dotsOptions: { color: qrColor, type: STYLE_MAP[currentStyle].dots },
     cornersSquareOptions: {
       color: qrColor,
@@ -186,6 +200,53 @@ bgTransparentToggle.addEventListener('click', () => {
   const isTransparent = !bgPickerWrapper.classList.contains('is-transparent')
   setTransparentBackground(isTransparent)
   renderQr(currentUrl)
+})
+
+logoBtn.addEventListener('click', () => {
+  logoInput.click()
+})
+
+logoInput.addEventListener('change', () => {
+  const file = logoInput.files?.[0]
+  if (!file) return
+  void setLogoFromFile(file)
+})
+
+logoRemoveBtn.addEventListener('click', () => {
+  setLogo(null)
+  logoInput.value = ''
+})
+
+let dragDepth = 0
+previewSection.addEventListener('dragenter', (e) => {
+  if (!isFileDrag(e)) return
+  e.preventDefault()
+  dragDepth += 1
+  previewSection.classList.add('is-dragover')
+})
+
+previewSection.addEventListener('dragover', (e) => {
+  if (!isFileDrag(e)) return
+  e.preventDefault()
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+})
+
+previewSection.addEventListener('dragleave', (e) => {
+  if (!isFileDrag(e)) return
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) {
+    previewSection.classList.remove('is-dragover')
+  }
+})
+
+previewSection.addEventListener('drop', (e) => {
+  if (!isFileDrag(e)) return
+  e.preventDefault()
+  dragDepth = 0
+  previewSection.classList.remove('is-dragover')
+  const file = e.dataTransfer?.files?.[0]
+  if (!file) return
+  void setLogoFromFile(file)
 })
 
 styleToggle.addEventListener('click', () => {
@@ -318,6 +379,34 @@ function setTransparentBackground(isTransparent: boolean) {
   previewSection.classList.toggle('is-transparent', isTransparent)
   bgTransparentToggle.setAttribute('aria-pressed', String(isTransparent))
   bgColor = isTransparent ? null : (bgColorPicker.value || '#FFFFFF')
+}
+
+function setLogo(dataUrl: string | null) {
+  logoDataUrl = dataUrl
+  previewSection.classList.toggle('has-logo', Boolean(logoDataUrl))
+  logoRemoveBtn.hidden = !logoDataUrl
+  renderQr(currentUrl)
+}
+
+async function setLogoFromFile(file: File) {
+  if (!file.type.startsWith('image/')) return
+  const dataUrl = await readFileAsDataUrl(file)
+  if (!dataUrl) return
+  setLogo(dataUrl)
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Could not read image file'))
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.readAsDataURL(file)
+  })
+}
+
+function isFileDrag(e: DragEvent) {
+  const types = e.dataTransfer?.types
+  return Boolean(types && Array.from(types).includes('Files'))
 }
 
 function renderCreateView(opts: { empty?: boolean } = {}) {
