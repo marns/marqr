@@ -15,8 +15,12 @@ const currentLink = document.querySelector<HTMLDivElement>('#current-link')!
 const currentShortLink =
   document.querySelector<HTMLAnchorElement>('#current-short')!
 const qrTarget = document.querySelector<HTMLDivElement>('#qr-target')!
+const downloadToggle =
+  document.querySelector<HTMLButtonElement>('#download-toggle')!
+const downloadMenu = document.querySelector<HTMLDivElement>('#download-menu')!
+const downloadSection = document.querySelector<HTMLElement>('.download-toggle-wrapper')!
 const downloadPngBtn =
-  document.querySelector<HTMLButtonElement>('#download-btn')!
+  document.querySelector<HTMLButtonElement>('#download-png-btn')!
 const downloadSvgBtn =
   document.querySelector<HTMLButtonElement>('#download-svg-btn')!
 const colorPicker = document.querySelector<HTMLInputElement>('#color-picker')!
@@ -137,8 +141,6 @@ function handleInput(text: string) {
   const data = text.trim() || DEFAULT_URL
   currentUrl = data
   renderQr(data)
-  downloadPngBtn.disabled = false
-  downloadSvgBtn.disabled = false
 }
 
 urlInput.addEventListener('input', (e) => {
@@ -185,23 +187,41 @@ styleMenu.querySelectorAll<HTMLButtonElement>('button[data-style]').forEach((btn
 })
 
 document.addEventListener('click', (e) => {
-  if (!styleMenu || styleMenu.hasAttribute('hidden')) return
-  if (styleSection && !styleSection.contains(e.target as Node)) {
+  if (!styleMenu.hasAttribute('hidden') && styleSection && !styleSection.contains(e.target as Node)) {
     closeStyleMenu()
+  }
+  if (!downloadMenu.hasAttribute('hidden') && downloadSection && !downloadSection.contains(e.target as Node)) {
+    closeDownloadMenu()
   }
 })
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !styleMenu.hasAttribute('hidden')) {
-    closeStyleMenu()
+  if (e.key === 'Escape') {
+    if (!styleMenu.hasAttribute('hidden')) {
+      closeStyleMenu()
+    }
+    if (!downloadMenu.hasAttribute('hidden')) {
+      closeDownloadMenu()
+    }
+  }
+})
+
+downloadToggle.addEventListener('click', () => {
+  const isOpen = !downloadMenu.hasAttribute('hidden')
+  if (isOpen) {
+    closeDownloadMenu()
+  } else {
+    openDownloadMenu()
   }
 })
 
 downloadPngBtn.addEventListener('click', async () => {
+  closeDownloadMenu()
   await qrCode.download({ name: 'qrcode', extension: 'png' })
 })
 
 downloadSvgBtn.addEventListener('click', async () => {
+  closeDownloadMenu()
   await qrCode.download({ name: 'qrcode', extension: 'svg' })
 })
 
@@ -253,6 +273,16 @@ function openStyleMenu() {
 function closeStyleMenu() {
   styleMenu.setAttribute('hidden', '')
   styleToggle.setAttribute('aria-expanded', 'false')
+}
+
+function openDownloadMenu() {
+  downloadMenu.removeAttribute('hidden')
+  downloadToggle.setAttribute('aria-expanded', 'true')
+}
+
+function closeDownloadMenu() {
+  downloadMenu.setAttribute('hidden', '')
+  downloadToggle.setAttribute('aria-expanded', 'false')
 }
 
 function updateColorPickerVisual(color: string) {
