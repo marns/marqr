@@ -777,9 +777,10 @@ h1 {
 
 .download-menu button {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-md);
   padding: 0.5rem 0.7rem;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
@@ -795,13 +796,17 @@ h1 {
   border-color: var(--accent);
 }
 
-.download-format {
-  font-weight: 600;
+.download-menu button svg {
+  opacity: 0.6;
+  flex-shrink: 0;
 }
 
-.download-desc {
-  font-size: 0.8rem;
-  color: var(--placeholder);
+.download-menu button:hover svg {
+  opacity: 1;
+}
+
+.download-format {
+  font-weight: 600;
 }
 
 .style-swatch {
