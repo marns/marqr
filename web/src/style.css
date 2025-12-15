@@ -916,6 +916,7 @@ button:focus-visible {
     --text: #111111;
     --border: #dcdcdc;
     --placeholder: #666;
+    --checkerboard-bg: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 12px 12px;
     color: #213547;
     background-color: #ffffff;
   }
