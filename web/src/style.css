@@ -476,19 +476,15 @@ h1 {
 .bg-picker-wrapper {
   display: flex;
   align-items: stretch;
-  gap: 0;
   flex: 0 0 auto;
 }
 
 .bg-picker {
   border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-  border-right: none;
+  margin-right: -1px;
 }
 
-.bg-picker .fill-drop {
-  fill: var(--bg-picker-color, #fff);
-}
-
+.bg-picker .fill-drop,
 .bg-picker .fill-bucket {
   fill: var(--bg-picker-color, #fff);
 }
@@ -497,49 +493,23 @@ h1 {
   color: var(--text);
 }
 
-.bg-picker,
-.transparent-toggle {
-  position: relative;
+/* Dim inactive state icons */
+.bg-picker-wrapper.is-transparent .bg-picker svg,
+.bg-picker-wrapper:not(.is-transparent) .transparent-slash {
+  opacity: 0.6;
 }
 
-.transparent-toggle::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--hover-bg-strong);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--transition-fast);
-}
-
-.transparent-toggle:hover::before {
+/* Full opacity on hover */
+.bg-picker-wrapper.is-transparent .bg-picker:hover svg,
+.transparent-toggle:hover .transparent-slash {
   opacity: 1;
 }
 
-.bg-picker::after,
-.transparent-toggle::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border: 2px solid transparent;
-  border-radius: inherit;
-}
-
-.bg-picker-wrapper:not(.is-transparent) .bg-picker::after {
+/* Border highlighting for active state */
+.bg-picker-wrapper:not(.is-transparent) .bg-picker,
+.bg-picker-wrapper.is-transparent .transparent-toggle {
   border-color: var(--accent);
-}
-
-.bg-picker-wrapper.is-transparent .transparent-toggle::after {
-  border-color: var(--accent);
-}
-
-.bg-picker-wrapper.is-transparent .bg-picker {
-  opacity: 0.6;
-}
-
-.bg-picker-wrapper:not(.is-transparent) .transparent-toggle {
-  opacity: 0.6;
+  z-index: 1;
 }
 
 .transparent-toggle {
@@ -549,19 +519,20 @@ h1 {
   justify-content: center;
   width: 24px;
   min-width: 24px;
-  min-height: var(--size-picker);
+  height: var(--size-picker);
   padding: 0;
-  border: 1px solid #d0d0d0;
-  border-left: none;
+  border: 1px solid var(--border);
   border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
   background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 8px 8px;
+  background-clip: padding-box;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast);
 }
 
-.transparent-toggle:hover {
+.transparent-toggle:hover:not(:disabled) {
   border-color: var(--accent);
+  z-index: 1;
 }
 
 .transparent-toggle:focus-visible {
@@ -569,14 +540,10 @@ h1 {
   outline-offset: 2px;
 }
 
-.transparent-toggle[aria-pressed="true"] {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-
 .transparent-slash {
   width: 100%;
   height: 100%;
+  color: #000;
 }
 
 .transparent-toggle[aria-pressed="true"] .transparent-slash {
