@@ -84,7 +84,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: clamp(0.05rem, 0.6vh, 0.45rem) 0.4rem;
+  padding: clamp(0.05rem, 0.6vh, 0.45rem) 0.25rem;
   min-width: var(--width-mobile);
   min-height: 100dvh;
   background-color: var(--bg);
@@ -735,15 +735,27 @@ h1 {
 
 .download-toggle-wrapper {
   position: relative;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
 }
 
 #download-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--gap-sm);
   min-width: var(--size-picker);
   min-height: var(--size-picker);
+  width: 100%;
+}
+
+#download-toggle .download-label {
+  display: none;
+}
+
+@media (min-width: 600px) {
+  #download-toggle .download-label {
+    display: inline;
+  }
 }
 
 #download-toggle:hover {
@@ -908,6 +920,9 @@ button:focus-visible {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --gap-md: 0.35rem;
+  }
   .footer {
     padding-bottom: calc(0.4rem + env(safe-area-inset-bottom, 0px));
     margin-bottom: env(safe-area-inset-bottom, 0px);
