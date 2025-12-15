@@ -653,11 +653,6 @@ h1 {
   padding: 0.25rem;
 }
 
-#logo-btn img {
-  width: 20px;
-  height: 20px;
-  filter: brightness(0) invert(1);
-}
 
 #qr-target,
 #qr-target svg {
