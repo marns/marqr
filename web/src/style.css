@@ -685,6 +685,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: var(--gap-sm);
+  min-width: 120px;
 }
 
 #style-toggle:hover {
@@ -808,7 +809,8 @@ h1 {
   width: 22px;
   height: 22px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, #3aa0ff 0%, #6fc2ff 100%);
+  background: var(--text);
+  border: 2px solid var(--bg);
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
   gap: 2px;
@@ -824,17 +826,21 @@ h1 {
   border-radius: var(--radius-md);
 }
 
+.style-dots {
+  border-radius: 50%;
+}
+
 .style-dots::before,
 .style-dots::after {
   border-radius: 50%;
 }
 
 .style-classy {
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md) 0 var(--radius-md) 0;
 }
 
 .style-square {
-  border-radius: var(--radius-xs);
+  border-radius: 0;
 }
 
 button {
