@@ -469,6 +469,7 @@ h1 {
   height: var(--size-icon-md);
   color: var(--picker-color, var(--text));
   pointer-events: none;
+  paint-order: stroke fill;
 }
 
 /* Background color picker */
@@ -484,13 +485,8 @@ h1 {
   margin-right: -1px;
 }
 
-.bg-picker .fill-drop,
-.bg-picker .fill-bucket {
-  fill: var(--bg-picker-color, #fff);
-}
-
 .bg-picker svg {
-  color: var(--text);
+  color: var(--bg-picker-color, #fff);
 }
 
 /* Dim inactive state icons */

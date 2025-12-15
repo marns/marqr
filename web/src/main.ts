@@ -27,9 +27,12 @@ const downloadSvgBtn =
 const colorPicker = document.querySelector<HTMLInputElement>('#color-picker')!
 const colorPickerWrapper =
   document.querySelector<HTMLLabelElement>('.color-picker')!
+const qrPickerFill = document.querySelector<SVGPathElement>('.qr-picker-fill')!
 const bgColorPicker = document.querySelector<HTMLInputElement>('#bg-color-picker')!
 const bgPickerWrapper = document.querySelector<HTMLDivElement>('.bg-picker-wrapper')!
 const bgPickerLabel = document.querySelector<HTMLLabelElement>('.bg-picker')!
+const bgPickerFills = document.querySelectorAll<SVGPathElement>('.bg-picker-fill')
+const bgPickerHandle = document.querySelector<SVGPathElement>('.bg-picker-handle')!
 const bgTransparentToggle = document.querySelector<HTMLButtonElement>('#bg-transparent-toggle')!
 const styleToggle = document.querySelector<HTMLButtonElement>('#style-toggle')!
 const styleMenu = document.querySelector<HTMLDivElement>('#style-menu')!
@@ -376,12 +379,24 @@ function closeDownloadMenu() {
   downloadToggle.setAttribute('aria-expanded', 'false')
 }
 
+function getLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  return 0.299 * r + 0.587 * g + 0.114 * b
+}
+
 function updateColorPickerVisual(color: string) {
   colorPickerWrapper.style.setProperty('--picker-color', color)
+  const strokeColor = getLuminance(color) > 0.5 ? '#000' : '#fff'
+  qrPickerFill.setAttribute('stroke', strokeColor)
 }
 
 function updateBgPickerVisual(color: string) {
   bgPickerLabel.style.setProperty('--bg-picker-color', color)
+  const strokeColor = getLuminance(color) > 0.5 ? '#000' : '#fff'
+  bgPickerFills.forEach((el) => el.setAttribute('stroke', strokeColor))
+  bgPickerHandle.setAttribute('stroke', color)
 }
 
 function setTransparentBackground(isTransparent: boolean) {
