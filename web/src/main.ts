@@ -133,20 +133,20 @@ const qrCode = new QRCodeStyling({
 
 qrCode.append(qrTarget)
 
-function renderQr(data: string) {
-  const imageOptions = {
-    hideBackgroundDots: true,
-    imageSize: 0.28,
-    margin: 24,
-    crossOrigin: 'anonymous' as const,
-    saveAsBlob: true
-  }
+const IMAGE_OPTIONS = {
+  hideBackgroundDots: true,
+  imageSize: 0.28,
+  margin: 24,
+  crossOrigin: 'anonymous' as const,
+  saveAsBlob: true
+}
 
-  qrCode.update({
-    type: 'svg',
+function getQrOptions(data: string, type: 'svg' | 'canvas' = 'svg') {
+  return {
+    type,
     data,
     image: logoDataUrl ?? undefined,
-    imageOptions,
+    imageOptions: IMAGE_OPTIONS,
     dotsOptions: { color: qrColor, type: STYLE_MAP[currentStyle].dots },
     cornersSquareOptions: {
       color: qrColor,
@@ -154,7 +154,11 @@ function renderQr(data: string) {
     },
     cornersDotOptions: { color: qrColor, type: STYLE_MAP[currentStyle].cornersDot },
     backgroundOptions: bgColor ? { color: bgColor } : { color: 'transparent' }
-  })
+  }
+}
+
+function renderQr(data: string) {
+  qrCode.update(getQrOptions(data, 'svg'))
 }
 
 function handleInput(text: string) {
@@ -297,11 +301,17 @@ downloadToggle.addEventListener('click', () => {
 
 downloadPngBtn.addEventListener('click', async () => {
   closeDownloadMenu()
+  // Update with canvas type for PNG download to ensure all options are captured
+  qrCode.update(getQrOptions(currentUrl, 'canvas'))
   await qrCode.download({ name: 'qrcode', extension: 'png' })
+  // Restore SVG display
+  renderQr(currentUrl)
 })
 
 downloadSvgBtn.addEventListener('click', async () => {
   closeDownloadMenu()
+  // Re-apply all current options before downloading to ensure they're captured
+  renderQr(currentUrl)
   await qrCode.download({ name: 'qrcode', extension: 'svg' })
 })
 
