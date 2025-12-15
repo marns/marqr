@@ -47,7 +47,15 @@
     </header>
 
     <div class="preview-section content-block">
-      <div id="qr-target"></div>
+      <div class="qr-stage">
+        <div id="qr-target"></div>
+        <div class="qr-dropzone" id="qr-dropzone" aria-hidden="true">
+          <span class="qr-dropzone-label">Drop logo</span>
+          <button type="button" class="icon-btn qr-logo-remove" id="logo-remove" aria-label="Remove logo" hidden>
+            ✕
+          </button>
+        </div>
+      </div>
     </div>
     <div class="controls-row content-block">
       <div class="input-wrapper">
@@ -83,19 +91,67 @@
           </button>
         </div>
       </div>
-      <label class="color-picker">
+      <label class="color-picker" title="QR color">
           <input type="color" id="color-picker" value="#000000" aria-label="QR color" />
-          <svg aria-hidden="true" viewBox="0 0 492.449 492.449" role="img" fill="currentColor">
-            <path
+          <svg aria-hidden="true" viewBox="-15 -15 522.449 522.449" role="img">
+            <path class="qr-picker-fill" fill="currentColor" stroke-width="25"
               d="M492.19,255.101c-2.954-65.279-31.045-127.694-79.098-175.748c-25.675-25.675-55.349-45.636-88.195-59.328 C293.024,6.739,259.809,0.003,226.174,0.003c-61.758,0-118.927,23.158-160.978,65.208c-30.067,30.066-50.775,68.312-59.888,110.6 c-8.761,40.661-6.646,84.015,6.12,125.374l42.297,9.543c17.819-19.393,43.128-30.516,69.437-30.516 c51.983,0,94.274,42.292,94.274,94.275c0,25.455-9.997,49.316-28.15,67.186l11.031,41.955c21.707,5.852,43.898,8.816,65.957,8.818 c0.008,0,0.006,0,0.014,0c61.742,0,118.907-23.154,160.948-65.195C472.114,382.37,495.182,321.233,492.19,255.101z M323.777,77.013 c20.856,0,37.765,16.907,37.765,37.764c0,20.857-16.907,37.764-37.765,37.764c-20.856,0-37.764-16.907-37.764-37.764 C286.013,93.92,302.921,77.013,323.777,77.013z M101.7,203.304c-20.856,0-37.764-16.907-37.764-37.764s16.907-37.764,37.764-37.764 s37.764,16.907,37.764,37.764S122.556,203.304,101.7,203.304z M201.028,127.777c-20.856,0-37.764-16.907-37.764-37.764 s16.907-37.764,37.764-37.764c20.857,0,37.764,16.907,37.764,37.764S221.884,127.777,201.028,127.777z M326.112,409.29 c-29.821,0-53.996-24.175-53.996-53.997c0-29.821,24.175-53.997,53.996-53.997c29.822,0,53.997,24.176,53.997,53.997 C380.109,385.115,355.933,409.29,326.112,409.29z M396.607,266.935c-20.855,0-37.764-16.906-37.764-37.763 c0-20.857,16.907-37.764,37.764-37.764c20.857,0,37.765,16.907,37.765,37.764C434.372,250.028,417.464,266.935,396.607,266.935z" />
           </svg>
       </label>
-      <button id="download-btn" type="button" aria-label="Download PNG">
-        ⬇ PNG
-      </button>
-      <button id="download-svg-btn" type="button" aria-label="Download SVG">
-        ⬇ SVG
-      </button>
+      <div class="bg-picker-wrapper">
+        <label class="color-picker bg-picker" title="Background color">
+          <input type="color" id="bg-color-picker" value="#ffffff" aria-label="Background color" />
+          <svg aria-hidden="true" viewBox="-1 -1 26 26" fill="none">
+            <path class="bg-picker-fill" d="M2.63596 10.2927L9.70703 3.22168L18.1923 11.707L11.1212 18.778C10.3402 19.5591 9.07387 19.5591 8.29282 18.778L2.63596 13.1212C1.85492 12.3401 1.85492 11.0738 2.63596 10.2927Z" fill="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path class="bg-picker-fill" d="M8.29297 1.80762L9.70718 3.22183" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path class="bg-picker-handle" d="M8.29297 1.80762L9.70718 3.22183" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path class="bg-picker-fill" fill-rule="evenodd" clip-rule="evenodd" d="M19.9991 15C19.9991 15 22.9991 17.9934 22.9994 19.8865C22.9997 21.5422 21.6552 22.8865 19.9997 22.8865C18.3442 22.8865 17.012 21.5422 17 19.8865C17.0098 17.9924 19.9991 15 19.9991 15Z" fill="currentColor" stroke-width="1.5" stroke-miterlimit="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </label>
+        <button type="button" id="bg-transparent-toggle" class="transparent-toggle" title="Transparent background" aria-label="Toggle transparent background" aria-pressed="false">
+          <svg class="transparent-slash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <line x1="24" y1="0" x2="0" y2="24"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="logo-toggle-wrapper">
+        <input type="file" id="logo-input" accept="image/*" hidden />
+        <button id="logo-btn" class="ghost" type="button" aria-label="Add or change logo" title="Add logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" ry="2"></rect>
+            <circle cx="9" cy="10" r="1.5"></circle>
+            <path d="M21 16l-6-6-4 4-2-2-6 6"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="download-toggle-wrapper">
+        <button id="download-toggle" class="ghost" type="button" aria-expanded="false" aria-label="Download QR code">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span class="download-label">Download</span>
+        </button>
+        <div class="download-menu" id="download-menu" hidden>
+          <button type="button" id="download-png-btn">
+            <span class="download-format">PNG</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+          <button type="button" id="download-svg-btn">
+            <span class="download-format">SVG</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
 
   </div>

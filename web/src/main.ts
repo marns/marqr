@@ -15,17 +15,32 @@ const currentLink = document.querySelector<HTMLDivElement>('#current-link')!
 const currentShortLink =
   document.querySelector<HTMLAnchorElement>('#current-short')!
 const qrTarget = document.querySelector<HTMLDivElement>('#qr-target')!
+const previewSection = document.querySelector<HTMLDivElement>('.preview-section')!
+const downloadToggle =
+  document.querySelector<HTMLButtonElement>('#download-toggle')!
+const downloadMenu = document.querySelector<HTMLDivElement>('#download-menu')!
+const downloadSection = document.querySelector<HTMLElement>('.download-toggle-wrapper')!
 const downloadPngBtn =
-  document.querySelector<HTMLButtonElement>('#download-btn')!
+  document.querySelector<HTMLButtonElement>('#download-png-btn')!
 const downloadSvgBtn =
   document.querySelector<HTMLButtonElement>('#download-svg-btn')!
 const colorPicker = document.querySelector<HTMLInputElement>('#color-picker')!
 const colorPickerWrapper =
   document.querySelector<HTMLLabelElement>('.color-picker')!
+const qrPickerFill = document.querySelector<SVGPathElement>('.qr-picker-fill')!
+const bgColorPicker = document.querySelector<HTMLInputElement>('#bg-color-picker')!
+const bgPickerWrapper = document.querySelector<HTMLDivElement>('.bg-picker-wrapper')!
+const bgPickerLabel = document.querySelector<HTMLLabelElement>('.bg-picker')!
+const bgPickerFills = document.querySelectorAll<SVGPathElement>('.bg-picker-fill')
+const bgPickerHandle = document.querySelector<SVGPathElement>('.bg-picker-handle')!
+const bgTransparentToggle = document.querySelector<HTMLButtonElement>('#bg-transparent-toggle')!
 const styleToggle = document.querySelector<HTMLButtonElement>('#style-toggle')!
 const styleMenu = document.querySelector<HTMLDivElement>('#style-menu')!
 const styleLabel = document.querySelector<HTMLSpanElement>('#style-label')!
 const styleSection = document.querySelector<HTMLElement>('.style-toggle-wrapper')!
+const logoInput = document.querySelector<HTMLInputElement>('#logo-input')!
+const logoBtn = document.querySelector<HTMLButtonElement>('#logo-btn')!
+const logoRemoveBtn = document.querySelector<HTMLButtonElement>('#logo-remove')!
 const popoverStatusCreate =
   document.querySelector<HTMLParagraphElement>('#popover-status-create')!
 const popoverStatusEdit =
@@ -52,6 +67,8 @@ const QR_ECC = 'M'
 const DEFAULT_URL = 'https://marqr.net'
 let currentUrl = DEFAULT_URL
 let qrColor = '#000000'
+let bgColor: string | null = '#FFFFFF'
+let logoDataUrl: string | null = null
 type StyleKey = 'rounded' | 'dots' | 'classy' | 'square'
 let currentStyle: StyleKey = 'square'
 type RedirectRecord = {
@@ -119,26 +136,38 @@ const qrCode = new QRCodeStyling({
 
 qrCode.append(qrTarget)
 
-function renderQr(data: string) {
-  qrCode.update({
-    type: 'svg',
+const IMAGE_OPTIONS = {
+  hideBackgroundDots: true,
+  imageSize: 0.28,
+  margin: 24,
+  crossOrigin: 'anonymous' as const,
+  saveAsBlob: true
+}
+
+function getQrOptions(data: string, type: 'svg' | 'canvas' = 'svg') {
+  return {
+    type,
     data,
+    image: logoDataUrl ?? undefined,
+    imageOptions: IMAGE_OPTIONS,
     dotsOptions: { color: qrColor, type: STYLE_MAP[currentStyle].dots },
     cornersSquareOptions: {
       color: qrColor,
       type: STYLE_MAP[currentStyle].cornersSquare
     },
     cornersDotOptions: { color: qrColor, type: STYLE_MAP[currentStyle].cornersDot },
-    backgroundOptions: { color: '#FFFFFF' }
-  })
+    backgroundOptions: bgColor ? { color: bgColor } : { color: 'transparent' }
+  }
+}
+
+function renderQr(data: string) {
+  qrCode.update(getQrOptions(data, 'svg'))
 }
 
 function handleInput(text: string) {
   const data = text.trim() || DEFAULT_URL
   currentUrl = data
   renderQr(data)
-  downloadPngBtn.disabled = false
-  downloadSvgBtn.disabled = false
 }
 
 urlInput.addEventListener('input', (e) => {
@@ -167,6 +196,66 @@ colorPicker.addEventListener('input', () => {
   renderQr(currentUrl)
 })
 
+bgColorPicker.addEventListener('input', () => {
+  bgColor = bgColorPicker.value || '#FFFFFF'
+  updateBgPickerVisual(bgColor)
+  setTransparentBackground(false)
+  renderQr(currentUrl)
+})
+
+bgTransparentToggle.addEventListener('click', () => {
+  const isTransparent = !bgPickerWrapper.classList.contains('is-transparent')
+  setTransparentBackground(isTransparent)
+  renderQr(currentUrl)
+})
+
+logoBtn.addEventListener('click', () => {
+  logoInput.click()
+})
+
+logoInput.addEventListener('change', () => {
+  const file = logoInput.files?.[0]
+  if (!file) return
+  void setLogoFromFile(file)
+})
+
+logoRemoveBtn.addEventListener('click', () => {
+  setLogo(null)
+  logoInput.value = ''
+})
+
+let dragDepth = 0
+previewSection.addEventListener('dragenter', (e) => {
+  if (!isFileDrag(e)) return
+  e.preventDefault()
+  dragDepth += 1
+  previewSection.classList.add('is-dragover')
+})
+
+previewSection.addEventListener('dragover', (e) => {
+  if (!isFileDrag(e)) return
+  e.preventDefault()
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+})
+
+previewSection.addEventListener('dragleave', (e) => {
+  if (!isFileDrag(e)) return
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) {
+    previewSection.classList.remove('is-dragover')
+  }
+})
+
+previewSection.addEventListener('drop', (e) => {
+  if (!isFileDrag(e)) return
+  e.preventDefault()
+  dragDepth = 0
+  previewSection.classList.remove('is-dragover')
+  const file = e.dataTransfer?.files?.[0]
+  if (!file) return
+  void setLogoFromFile(file)
+})
+
 styleToggle.addEventListener('click', () => {
   const isOpen = !styleMenu.hasAttribute('hidden')
   if (isOpen) {
@@ -185,23 +274,47 @@ styleMenu.querySelectorAll<HTMLButtonElement>('button[data-style]').forEach((btn
 })
 
 document.addEventListener('click', (e) => {
-  if (!styleMenu || styleMenu.hasAttribute('hidden')) return
-  if (styleSection && !styleSection.contains(e.target as Node)) {
+  if (!styleMenu.hasAttribute('hidden') && styleSection && !styleSection.contains(e.target as Node)) {
     closeStyleMenu()
+  }
+  if (!downloadMenu.hasAttribute('hidden') && downloadSection && !downloadSection.contains(e.target as Node)) {
+    closeDownloadMenu()
   }
 })
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !styleMenu.hasAttribute('hidden')) {
-    closeStyleMenu()
+  if (e.key === 'Escape') {
+    if (!styleMenu.hasAttribute('hidden')) {
+      closeStyleMenu()
+    }
+    if (!downloadMenu.hasAttribute('hidden')) {
+      closeDownloadMenu()
+    }
+  }
+})
+
+downloadToggle.addEventListener('click', () => {
+  const isOpen = !downloadMenu.hasAttribute('hidden')
+  if (isOpen) {
+    closeDownloadMenu()
+  } else {
+    openDownloadMenu()
   }
 })
 
 downloadPngBtn.addEventListener('click', async () => {
+  closeDownloadMenu()
+  // Update with canvas type for PNG download to ensure all options are captured
+  qrCode.update(getQrOptions(currentUrl, 'canvas'))
   await qrCode.download({ name: 'qrcode', extension: 'png' })
+  // Restore SVG display
+  renderQr(currentUrl)
 })
 
 downloadSvgBtn.addEventListener('click', async () => {
+  closeDownloadMenu()
+  // Re-apply all current options before downloading to ensure they're captured
+  renderQr(currentUrl)
   await qrCode.download({ name: 'qrcode', extension: 'svg' })
 })
 
@@ -229,6 +342,7 @@ document.addEventListener('keydown', (e) => {
 
 applyStyle(currentStyle, { rerender: false })
 updateColorPickerVisual(qrColor)
+updateBgPickerVisual('#FFFFFF')
 handleInput('')
 closeStyleMenu()
 void hydrateFromUrl()
@@ -255,8 +369,69 @@ function closeStyleMenu() {
   styleToggle.setAttribute('aria-expanded', 'false')
 }
 
+function openDownloadMenu() {
+  downloadMenu.removeAttribute('hidden')
+  downloadToggle.setAttribute('aria-expanded', 'true')
+}
+
+function closeDownloadMenu() {
+  downloadMenu.setAttribute('hidden', '')
+  downloadToggle.setAttribute('aria-expanded', 'false')
+}
+
+function getLuminance(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  return 0.299 * r + 0.587 * g + 0.114 * b
+}
+
 function updateColorPickerVisual(color: string) {
   colorPickerWrapper.style.setProperty('--picker-color', color)
+  const strokeColor = getLuminance(color) > 0.5 ? '#000' : '#fff'
+  qrPickerFill.setAttribute('stroke', strokeColor)
+}
+
+function updateBgPickerVisual(color: string) {
+  bgPickerLabel.style.setProperty('--bg-picker-color', color)
+  const strokeColor = getLuminance(color) > 0.5 ? '#000' : '#fff'
+  bgPickerFills.forEach((el) => el.setAttribute('stroke', strokeColor))
+  bgPickerHandle.setAttribute('stroke', color)
+}
+
+function setTransparentBackground(isTransparent: boolean) {
+  bgPickerWrapper.classList.toggle('is-transparent', isTransparent)
+  previewSection.classList.toggle('is-transparent', isTransparent)
+  bgTransparentToggle.setAttribute('aria-pressed', String(isTransparent))
+  bgColor = isTransparent ? null : (bgColorPicker.value || '#FFFFFF')
+}
+
+function setLogo(dataUrl: string | null) {
+  logoDataUrl = dataUrl
+  previewSection.classList.toggle('has-logo', Boolean(logoDataUrl))
+  logoRemoveBtn.hidden = !logoDataUrl
+  renderQr(currentUrl)
+}
+
+async function setLogoFromFile(file: File) {
+  if (!file.type.startsWith('image/')) return
+  const dataUrl = await readFileAsDataUrl(file)
+  if (!dataUrl) return
+  setLogo(dataUrl)
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Could not read image file'))
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.readAsDataURL(file)
+  })
+}
+
+function isFileDrag(e: DragEvent) {
+  const types = e.dataTransfer?.types
+  return Boolean(types && Array.from(types).includes('Files'))
 }
 
 function renderCreateView(opts: { empty?: boolean } = {}) {
@@ -494,4 +669,3 @@ function hideMainLinkDisplay() {
   currentShortLink.removeAttribute('href')
   inputWrapper.classList.remove('has-redirect')
 }
-

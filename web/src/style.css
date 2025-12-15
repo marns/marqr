@@ -24,6 +24,7 @@
   --hover-bg-strong: rgba(255, 255, 255, 0.05);
   --error: #ff7b7b;
   --backdrop: rgba(0, 0, 0, 0.35);
+  --checkerboard-bg: repeating-conic-gradient(#333 0% 25%, #444 0% 50%) 50% / 12px 12px;
 
   /* Spacing */
   --gap-xs: 0.25rem;
@@ -83,7 +84,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: clamp(0.05rem, 0.6vh, 0.45rem) 0.4rem;
+  padding: clamp(0.05rem, 0.6vh, 0.45rem) 0.25rem;
   min-width: var(--width-mobile);
   min-height: 100dvh;
   background-color: var(--bg);
@@ -341,6 +342,7 @@ h1 {
 
 .ghost:hover:not(:disabled) {
   border-color: var(--accent);
+  background-color: var(--hover-bg-strong);
 }
 
 .container {
@@ -437,20 +439,25 @@ h1 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: #f7f7f7;
+  background: transparent;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   flex: 0 0 auto;
   cursor: pointer;
 }
 
-.color-picker:is(:hover, :focus-within) {
+.color-picker:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-shadow);
+  background: var(--hover-bg-strong);
 }
 
-#color-picker {
+.color-picker:has(input[type="color"]:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.color-picker input[type="color"] {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -462,6 +469,81 @@ h1 {
   height: var(--size-icon-md);
   color: var(--picker-color, var(--text));
   pointer-events: none;
+  paint-order: stroke fill;
+}
+
+/* Background color picker */
+
+.bg-picker-wrapper {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+}
+
+.bg-picker {
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  margin-right: -1px;
+}
+
+.bg-picker svg {
+  color: var(--bg-picker-color, #fff);
+}
+
+/* Dim inactive state icons */
+.bg-picker-wrapper.is-transparent .bg-picker svg,
+.bg-picker-wrapper:not(.is-transparent) .transparent-slash {
+  opacity: 0.6;
+}
+
+/* Full opacity on hover */
+.bg-picker-wrapper.is-transparent .bg-picker:hover svg,
+.transparent-toggle:hover .transparent-slash {
+  opacity: 1;
+}
+
+/* Border highlighting for active state */
+.bg-picker-wrapper:not(.is-transparent) .bg-picker,
+.bg-picker-wrapper.is-transparent .transparent-toggle {
+  border-color: var(--accent);
+  z-index: 1;
+}
+
+.transparent-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-width: 24px;
+  height: var(--size-picker);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  background: var(--checkerboard-bg);
+  background-clip: padding-box;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.transparent-toggle:hover:not(:disabled) {
+  border-color: var(--accent);
+  z-index: 1;
+}
+
+.transparent-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.transparent-slash {
+  width: 100%;
+  height: 100%;
+  color: var(--text);
+}
+
+.transparent-toggle[aria-pressed="true"] .transparent-slash {
+  display: none;
 }
 
 .preview-section {
@@ -472,7 +554,101 @@ h1 {
   background-color: var(--panel);
   border-radius: var(--radius-xl);
   border: 2px solid var(--border);
+  position: relative;
+  overflow: hidden;
 }
+
+.preview-section.is-transparent {
+  background: var(--checkerboard-bg);
+}
+
+.qr-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.qr-dropzone {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(44%, 240px);
+  aspect-ratio: 1 / 1;
+  border-radius: calc(var(--radius-xl) * 0.85);
+  border: 2px dashed transparent;
+  background: transparent;
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  z-index: 2;
+}
+
+.preview-section.is-dragover .qr-dropzone {
+  border-color: var(--accent);
+  background: rgba(26, 26, 26, 0.55);
+  pointer-events: auto;
+}
+
+.qr-dropzone-label {
+  font-size: 0.75rem;
+  padding: 0 1rem;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.preview-section.is-dragover .qr-dropzone-label {
+  opacity: 1;
+}
+
+.qr-logo-remove {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  transform: scale(0.95);
+  background: rgba(26, 26, 26, 0.7);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.qr-logo-remove:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(26, 26, 26, 0.7);
+}
+
+.preview-section.has-logo .qr-dropzone {
+  pointer-events: auto;
+}
+
+.preview-section.has-logo .qr-dropzone:hover .qr-logo-remove,
+.preview-section.has-logo .qr-dropzone:focus-within .qr-logo-remove {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.logo-toggle-wrapper {
+  flex: 0 0 auto;
+}
+
+#logo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-picker);
+  min-height: var(--size-picker);
+  padding: 0.25rem;
+}
+
 
 #qr-target,
 #qr-target svg {
@@ -509,6 +685,7 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: var(--gap-sm);
+  min-width: 120px;
 }
 
 #style-toggle:hover {
@@ -554,12 +731,103 @@ h1 {
   border-color: var(--accent);
 }
 
+/* Download menu */
+
+.download-toggle-wrapper {
+  position: relative;
+  flex: 1 1 auto;
+}
+
+#download-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-sm);
+  min-width: var(--size-picker);
+  min-height: var(--size-picker);
+  width: 100%;
+}
+
+#download-toggle .download-label {
+  display: none;
+}
+
+@media (min-width: 600px) {
+  #download-toggle .download-label {
+    display: inline;
+  }
+}
+
+#download-toggle:hover {
+  background: var(--hover-bg-strong);
+  border-color: var(--accent);
+}
+
+#download-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.download-menu {
+  display: grid;
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  right: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--gap-sm);
+  gap: var(--gap-xs);
+  min-width: var(--width-menu-min);
+  z-index: 10;
+  box-shadow: var(--shadow-sm);
+}
+
+.download-menu[hidden] {
+  display: none !important;
+}
+
+.download-menu button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-md);
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.95rem;
+  min-height: auto;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.download-menu button:hover {
+  background: var(--accent-bg-subtle);
+  border-color: var(--accent);
+}
+
+.download-menu button svg {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.download-menu button:hover svg {
+  opacity: 1;
+}
+
+.download-format {
+  font-weight: 600;
+}
+
 .style-swatch {
   display: grid;
   width: 22px;
   height: 22px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, #3aa0ff 0%, #6fc2ff 100%);
+  background: var(--text);
+  border: 2px solid var(--bg);
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
   gap: 2px;
@@ -575,17 +843,21 @@ h1 {
   border-radius: var(--radius-md);
 }
 
+.style-dots {
+  border-radius: 50%;
+}
+
 .style-dots::before,
 .style-dots::after {
   border-radius: 50%;
 }
 
 .style-classy {
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md) 0 var(--radius-md) 0;
 }
 
 .style-square {
-  border-radius: var(--radius-xs);
+  border-radius: 0;
 }
 
 button {
@@ -648,6 +920,9 @@ button:focus-visible {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --gap-md: 0.35rem;
+  }
   .footer {
     padding-bottom: calc(0.4rem + env(safe-area-inset-bottom, 0px));
     margin-bottom: env(safe-area-inset-bottom, 0px);
@@ -661,6 +936,7 @@ button:focus-visible {
     --text: #111111;
     --border: #dcdcdc;
     --placeholder: #666;
+    --checkerboard-bg: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 12px 12px;
     color: #213547;
     background-color: #ffffff;
   }
